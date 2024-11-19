@@ -1,0 +1,16 @@
+{
+  "name": "com.cat.helpers",
+  "version": "1.0.0",
+  "displayName": "_Helpers",
+  "description": "A bunch of helper classes that can be used in any project: \n-Pooling System \n-Fabrics (for gameobjects anf Fmod events) \n-Fmod Extensions \n-SaveSystem with byte encoding \netc.",
+  "unity": "2019.1",
+  "unityRelease": "0b5",
+  "dependencies": {
+    "com.unity.addressables": "1.21.8",
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
+  },
+  "author": {
+    "name": "cat",
+    "email": "cat.ursu30@gmail.com"
+  }
+}
