@@ -12,8 +12,15 @@ public class FmodSettingsOverrideOnPlay : Singleton<FmodSettingsOverrideOnPlay>
         if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
             Settings.Instance.ImportType = ImportType.StreamingAssets;
     }
-
+    
     void OnDestroy() => Settings.Instance.ImportType = ImportType.AssetBundle;
 }
+}
+
+#else
+
+namespace Helpers
+{
+public class FmodSettingsOverrideOnPlay : Singleton<FmodSettingsOverrideOnPlay> { }
 }
 #endif
