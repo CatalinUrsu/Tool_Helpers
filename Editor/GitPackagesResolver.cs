@@ -2,9 +2,7 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using NugetForUnity;
 using Newtonsoft.Json.Linq;
-using NugetForUnity.Models;
 using System.Collections.Generic;
 
 namespace Helpers.Editor
@@ -52,33 +50,34 @@ public static class GitPackagesResolver
 
 #region ExternalPackages
 
-    [MenuItem("Tools/PackageResolver")]
+    [MenuItem("Tools/Resolver/Packages")]
     static void CheckExternalPackages()
     {
-        if (!TryGetManifest(out var manifest)) return;
-        if (!TryGetDependencies(manifest, out var dependencies)) return;
+        if (!TryGetManifest(out var manifest))
+        {
+            Debug.LogWarning($"[GitPackagesResolver]: No manifest");
+            return;
+        }
 
+        if (!TryGetDependencies(manifest, out var dependencies))
+        {
+            Debug.LogWarning($"[GitPackagesResolver]: No Dependencies");
+            return;
+        }
+
+        AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.Nuget]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.UniRx]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.AssetRelations]);
-        AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.Nuget]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.MemoryPack]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.UniTask]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.R3]);
-
         AssetDatabase.Refresh();
-
+        
+        DefineSymbolManager.AddDefineSymbol("NUGET_INSTALLED");
+        AssetDatabase.Refresh();
+        
         CheckNugetPackages();
-
         AssetDatabase.Refresh();
-    }
-    
-    static void AddPackageIfNotExists(JObject manifest, JObject dependencies, PackageInfo packageInfo)
-    {
-        if (dependencies.ContainsKey(packageInfo.Name)) return;
-
-        dependencies[packageInfo.Name] = packageInfo.Url;
-        File.WriteAllText(_manifestPath, manifest.ToString());
-        Debug.Log($"Added package {packageInfo.Name} to manifest.json.");
     }
 
     static bool TryGetManifest(out JObject manifest)
@@ -106,11 +105,28 @@ public static class GitPackagesResolver
         return true;
     }
 
+    static void AddPackageIfNotExists(JObject manifest, JObject dependencies, PackageInfo packageInfo)
+    {
+        Debug.LogWarning($"[GitPackagesResolver]: Check Package: {packageInfo.Name}");
+        if (dependencies.ContainsKey(packageInfo.Name)) return;
+        Debug.LogWarning($"[GitPackagesResolver]: Dependencies: {dependencies}");
+        Debug.LogWarning($"[GitPackagesResolver]: Install Package: {packageInfo.Name}");
+
+        dependencies[packageInfo.Name] = packageInfo.Url;
+        File.WriteAllText(_manifestPath, manifest.ToString());
+        Debug.Log($"Added package {packageInfo.Name} to manifest.json.");
+    }
+
+#if NUGET_INSTALLED
+    [MenuItem("Tools/Resolver/Nuget")]
     static void CheckNugetPackages()
     {
-        NugetPackageInstaller.InstallIdentifier(new NugetPackageIdentifier("MemoryPack", null));
-        NugetPackageInstaller.InstallIdentifier(new NugetPackageIdentifier("R3", null));
+        NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("MemoryPack", null));
+        NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("R3", null));
     }
+#else
+    static void CheckNugetPackages(){}    
+#endif
 
 #endregion
 

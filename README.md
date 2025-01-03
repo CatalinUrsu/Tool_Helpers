@@ -6,6 +6,7 @@ Additional helpful scripts for unity, that are designed to be used in multiple p
 </div>
 
 # Contents:
+- [Install ✅](#install-)
 - [Audio 🔊](#audio-)
 - [PoolSystem 🔄](#pool-system-)
   - [Pool ♻️](#pool-)
@@ -24,6 +25,16 @@ Additional helpful scripts for unity, that are designed to be used in multiple p
   - [Splash Screen Service 🧩](#splash-screen-service-)
 - [Notes](#notes)
 
+
+# Install ✅
+
+1. Open Package Manager window (Window | Package Manager)
+1. Click `+` button on the upper-left of a window, and select "Add package from git URL..."
+1. Enter the following URL and click `Add` button
+
+```
+https://github.com/CatalinUrsu/Tool_Helpers.git
+```
 
 # Audio 🔊
 For audio maangement, is used <b>FMOD</b> - sound engine that cover all needs, this is first project where I used it and now it will be a permanent component
