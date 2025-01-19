@@ -1,6 +1,6 @@
 using UnityEditor;
-using UnityEditor.Build;
 using UnityEngine;
+using UnityEditor.Build;
 
 namespace Helpers.Editor
 {
@@ -17,10 +17,6 @@ public static class DefineSymbolManager
             var newSymbols = currentSymbols + ";" + defineSymbol;
             PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newSymbols);
             Debug.Log($"Added define: {defineSymbol}");
-        }
-        else
-        {
-            Debug.LogWarning($"Define '{defineSymbol}' already exists.");
         }
     }    
 }

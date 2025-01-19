@@ -53,17 +53,8 @@ public static class GitPackagesResolver
     [MenuItem("Tools/Resolver/Packages")]
     static void CheckExternalPackages()
     {
-        if (!TryGetManifest(out var manifest))
-        {
-            Debug.LogWarning($"[GitPackagesResolver]: No manifest");
-            return;
-        }
-
-        if (!TryGetDependencies(manifest, out var dependencies))
-        {
-            Debug.LogWarning($"[GitPackagesResolver]: No Dependencies");
-            return;
-        }
+        if (!TryGetManifest(out var manifest)) return;
+        if (!TryGetDependencies(manifest, out var dependencies)) return;
 
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.Nuget]);
         AddPackageIfNotExists(manifest, dependencies, _packagesInfo[EPackages.UniRx]);
@@ -85,7 +76,7 @@ public static class GitPackagesResolver
         manifest = null;
         if (!File.Exists(_manifestPath))
         {
-            Debug.LogError("manifest.json not found at: " + _manifestPath);
+            Debug.LogError($"[GitPackagesResolver]: No manifest at: + {_manifestPath}");
             return false;
         }
 
@@ -98,7 +89,7 @@ public static class GitPackagesResolver
         dependencies = manifest["dependencies"] as JObject;
         if (dependencies == null)
         {
-            Debug.LogError("Dependencies not found in manifest.json");
+            Debug.LogError($"[GitPackagesResolver]: No Dependencies  in manifest.json");
             return false;
         }
 
@@ -107,14 +98,11 @@ public static class GitPackagesResolver
 
     static void AddPackageIfNotExists(JObject manifest, JObject dependencies, PackageInfo packageInfo)
     {
-        Debug.LogWarning($"[GitPackagesResolver]: Check Package: {packageInfo.Name}");
         if (dependencies.ContainsKey(packageInfo.Name)) return;
-        Debug.LogWarning($"[GitPackagesResolver]: Dependencies: {dependencies}");
-        Debug.LogWarning($"[GitPackagesResolver]: Install Package: {packageInfo.Name}");
 
         dependencies[packageInfo.Name] = packageInfo.Url;
         File.WriteAllText(_manifestPath, manifest.ToString());
-        Debug.Log($"Added package {packageInfo.Name} to manifest.json.");
+        Debug.LogWarning($"[GitPackagesResolver]: Installed Package: {packageInfo.Name}");
     }
 
 #if NUGET_INSTALLED
@@ -123,6 +111,7 @@ public static class GitPackagesResolver
     {
         NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("MemoryPack", null));
         NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("R3", null));
+        NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("ObservableCollections", null));
     }
 #else
     static void CheckNugetPackages(){}    
@@ -144,7 +133,7 @@ public static class GitPackagesResolver
 
         if (File.Exists(packagePath))
         {
-            Debug.Log($"Importing {packagePath}");
+            Debug.LogWarning($"Importing {packagePath}");
             AssetDatabase.ImportPackage(packagePath, false);
             AssetDatabase.Refresh();
             EditorApplication.update -= OnEditorUpdate;
