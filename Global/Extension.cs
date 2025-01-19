@@ -73,6 +73,8 @@ public static class Extension
             yield return transform.GetChild(i);
     }
 
+    public static bool IsPrefab(this GameObject go) => go.scene.name == null;
+
 #endregion
 
 #region Vectors
@@ -83,6 +85,12 @@ public static class Extension
     /// <returns></returns>
     public static Vector2 With(this Vector2 vector, float? x = null, float? y = null) =>
         new(x ?? vector.x, y ?? vector.y);
+    
+    public static Vector2 RoundDigits(this Vector2 vector, int digitsCount)
+    {
+        int num = (int)Mathf.Pow(10, digitsCount);
+        return new Vector2(Mathf.Round(vector.x * num) / num, Mathf.Round(vector.y * num) / num);
+    }
 
     /// <summary>
     /// Override specific value of Vector3
@@ -90,6 +98,12 @@ public static class Extension
     /// <returns></returns>
     public static Vector3 With(this Vector3 vector, float? x = null, float? y = null, float? z = null) =>
         new(x ?? vector.x, y ?? vector.y, z ?? vector.z);
+    
+    public static Vector3 RoundDigits(this Vector3 vector, int digitsCount)
+    {
+        int num = (int)Mathf.Pow(10, digitsCount);
+        return new Vector4(Mathf.Round(vector.x * num) / num, Mathf.Round(vector.y * num) / num, Mathf.Round(vector.z * num) / num);
+    }
 
     /// <summary>
     /// Override specific value of Vector4
@@ -97,6 +111,12 @@ public static class Extension
     /// <returns></returns>
     public static Vector4 With(this Vector4 vector, float? x = null, float? y = null, float? z = null, float? w = null) =>
         new(x ?? vector.x, y ?? vector.y, z ?? vector.z, w ?? vector.w);
+
+    public static Vector4 RoundDigits(this Vector4 vector, int digitsCount)
+    {
+        int num = (int)Mathf.Pow(10, digitsCount);
+        return new Vector4(Mathf.Round(vector.x * num) / num, Mathf.Round(vector.y * num) / num, Mathf.Round(vector.z * num) / num, Mathf.Round(vector.w * num) / num);
+    }
 
     public static float Remap(this float value, float from1, float to1, float from2, float to2)
     {
