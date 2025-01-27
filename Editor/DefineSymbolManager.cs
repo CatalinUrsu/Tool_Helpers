@@ -12,12 +12,11 @@ public static class DefineSymbolManager
         var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(group);
         var currentSymbols = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
 
-        if (!currentSymbols.Contains(defineSymbol))
-        {
-            var newSymbols = currentSymbols + ";" + defineSymbol;
-            PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newSymbols);
-            Debug.Log($"Added define: {defineSymbol}");
-        }
-    }    
+        if (currentSymbols.Contains(defineSymbol)) return;
+
+        var newSymbols = currentSymbols + ";" + defineSymbol;
+        PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newSymbols);
+        Debug.Log($"Added define: {defineSymbol}");
+    }
 }
 }
