@@ -10,7 +10,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEditor.AddressableAssets;
 #endif
 
-namespace Helpers
+namespace Helpers.Audio
 {
 public static class FmodExtensions
 {

@@ -3,7 +3,7 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using UnityEngine.AddressableAssets;
 
-namespace Helpers
+namespace Helpers.Audio
 {
 public class BankLoader : MonoBehaviour
 {
