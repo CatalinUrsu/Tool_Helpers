@@ -4,11 +4,12 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace Source.Session
+namespace Helpers
 {
-public class SaveSystem
+public static class SaveSystem
 {
-    public void Save<T>(string filePath, T sessionElement)
+    //TODO: (cat) Use MemoryPack instead of Newtonsoft.Json
+    public static void Save<T>(string filePath, T sessionElement)
     {
         if (Directory.Exists(ConstSession.SAVES_FOLDER_PATH) == false)
             Directory.CreateDirectory(ConstSession.SAVES_FOLDER_PATH);
@@ -22,7 +23,7 @@ public class SaveSystem
         }
     }
     
-    public T Load<T>(string filePath) where T: class
+    public static T Load<T>(string filePath) where T: class
     {
         if (!Directory.Exists(ConstSession.SAVES_FOLDER_PATH) || !File.Exists(filePath)) return null;
 

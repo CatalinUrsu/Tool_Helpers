@@ -1,8 +1,9 @@
 ﻿using System;
-using Constants;
 using UnityEngine;
+using System.Reflection;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
+
 #if DOTWEEN
 using DG.Tweening;
 #endif
@@ -74,6 +75,20 @@ public static class Extension
     }
 
     public static bool IsPrefab(this GameObject go) => go.scene.name == null;
+
+    /// <summary>
+    /// Set object's Private field using reflection. Very useful for Editor stuff, like custom Editor for classes
+    /// </summary>
+    public static void SetPrivateField(this object targetObject, string fieldName, object value)
+    {
+        Type type = targetObject.GetType();
+        FieldInfo fieldInfo = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+        
+        if (fieldInfo != null)
+            fieldInfo.SetValue(targetObject, value);
+        else
+            Debug.LogWarning($"Field {fieldName} not found in {type.Name}");
+    }
 
 #endregion
 
