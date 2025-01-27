@@ -3,8 +3,7 @@
 public enum EDropdownAnimation
 {
     None,
+    Resize,
     Fade,
-    MoveAndFade,
-    Filled
 }
 }

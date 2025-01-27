@@ -7,21 +7,16 @@ public class DropdownOption
 {
 #region Fields
 
-    //TODO: (cat) Attributes: Condition
     [SerializeField] bool _useLocalizedText;
-    //TODO: (cat) Attributes: OnlyIfFalse
     [SerializeField] string _usualTxt;
-    //TODO: (cat) Attributes: OnlyIfTrue
     [SerializeField] LocalizedString _localizedTxt;
-
-    [Space]
     [SerializeField] Sprite _sprite;
-    [SerializeField] bool _isOn;
 
     public string Txt => _useLocalizedText ? _localizedTxt.GetLocalizedString() : _usualTxt;
     public Sprite Sprite => _sprite;
-    public bool IsOn => _isOn;
+    public bool IsOn { get; private set; }
     public Guid GUID { get; private set; }
+    
     public DropdownOption() => GUID = Guid.NewGuid();
 
 #endregion
@@ -65,7 +60,7 @@ public class DropdownOption
             _usualTxt = _usualTxt,
             _localizedTxt = _localizedTxt,
             _sprite = _img,
-            _isOn = _isOptionOn,
+            IsOn = _isOptionOn,
         };
     }
 }

@@ -5,32 +5,28 @@ using UnityEngine.EventSystems;
 
 namespace Helpers.UI
 {
-public class DropdownItem : DropdownElementBase, IPointerEnterHandler
+public class DropdownItem : DropdownElementBase, ICancelHandler
 {
+#region Fields
+
     [field: SerializeField] public Toggle Toggle { get; set; }
 
     public Guid GUID { get; private set; }
+    
+    ICancelHandler  _dropdownCancelHandler;
 
-#if UNITY_EDITOR
-    void OnValidate()
+#endregion
+    
+    public void OnCancel(BaseEventData eventData) => _dropdownCancelHandler.OnCancel(eventData);
+
+    public void Init(ICancelHandler parentCancelHandler,DropdownOption data)
     {
-        if (!gameObject.activeInHierarchy || Application.isPlaying)
-            return;
-
-        if (Toggle) return;
-        Toggle = GetComponent<Toggle>();
-    }
-#endif
-
-    public void Init(DropdownOption data)
-    {
+        _dropdownCancelHandler = parentCancelHandler;
+        
         GUID = data.GUID;
         gameObject.SetActive(true);
-        gameObject.name = $"Item_{transform.GetSiblingIndex()}";
 
         UpdateContent(data);
     }
-
-    public virtual void OnPointerEnter(PointerEventData eventData) => EventSystem.current.SetSelectedGameObject(gameObject);
 }
 }

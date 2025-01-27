@@ -1,5 +1,4 @@
-﻿using R3;
-using System;
+﻿using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,54 +14,35 @@ namespace Helpers.UI
 {
 [RequireComponent(typeof(RectTransform))]
 [AddComponentMenu("UI/Helpers/Dropdown Helper")]
-//TODO: (cat) Custom Editor
 public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, ICancelHandler
 {
 #region Fields
 
-    //TODO: (cat) Attributes: Require, onlyChildren,
-    [SerializeField] DropdownCaption _caption;
+    [field: SerializeField] public DropdownCaption Caption;
+    [field: SerializeField] public DropdownPanel Panel;
+    [field: SerializeField] public DropdownItem ItemTemplate;
+    [field: SerializeField] public Transform ItemParent;
 
-    [Header("Elements")]
-    //TODO: (cat) Attributes: Require, onlyChildren,
-    [SerializeField] DropdownPanel _panel;
-    //TODO: (cat) Attributes: Require, onlyChildren,
-    [SerializeField] Transform _itemParent;
-    //TODO: (cat) Attributes: Require !     Check if is prefab and remove
-    [SerializeField] DropdownItem _itemTemplate;
+    [field: SerializeField] public EDropdownAnimation AnimationType;
+    [field: SerializeField] public float PanelAnimSpeed = 0.25f;
 
-    [Header("Properties")] 
-    [SerializeField] SerializableReactiveProperty<int> _selectedItemIdx = new SerializableReactiveProperty<int>();
-    [SerializeField] bool _multiSelect;
+    [field: SerializeField] public bool MultiSelect;
+    [field: SerializeField] public bool AddNoneItem;
+    [field: SerializeField] public bool AddEverythingItem;
+    [field: SerializeField] public DropdownOption NothingOption;
+    [field: SerializeField] public DropdownOption MixedOption;
+    [field: SerializeField] public DropdownOption EverythingOption;
+    [field: SerializeField] public List<DropdownOption> Options = new List<DropdownOption>();
 
-    [Header("Animation")] 
-    [SerializeField] float AlphaFadeSpeed = 0.15f;
-    [SerializeField] EDropdownAnimation _animation;
-
-    [Header("Options")]
-    //TODO: (cat) Attributes: Require !
-    [SerializeField] bool _addDeselectAllOption;
-    [SerializeField] DropdownOption _nothingOption;
-    [SerializeField] DropdownOption _mixedOption;
-    [SerializeField] DropdownOption _everythingOption;
-    [SerializeField] List<DropdownOption> _options = new List<DropdownOption>();
-
-    public event Action<DropdownOption> OnValueForCaptionChanged;
-    public event Action<int> OnToggleItem2;
-
-    public DropdownCaption Caption { get { return _caption; } set { _caption = value; } }
-    public DropdownPanel Panel { get { return _panel; } set { _panel = value; } }
-    public Transform ItemParent { get { return _itemParent; } set { _itemParent = value; } }
-    public DropdownItem ItemTemplate { get { return _itemTemplate; } set { _itemTemplate = value; } }
-    public int SelectedItemIdx { get { return _selectedItemIdx.Value; } set { _selectedItemIdx.Value = value; } }
-    public bool MultiSelect { get { return _multiSelect; } set { _multiSelect = value; } }
-    public EDropdownAnimation Animation { get { return _animation; } set { _animation = value; } }
+    public event Action<int> OnSelectItem;
+    public event Action<int, bool> OnMultipleSelectItem;
     public ObservableList<DropdownOption> ObservableOptions = new ObservableList<DropdownOption>();
 
     bool _isDropdownShown;
-    DropdownItem _deselectAllItem;
+    DropdownItem _noneItem;
+    DropdownItem _everythingItem;
+    DropdownItem _previousSelectedItem;
     List<DropdownItem> _items = new List<DropdownItem>();
-    IDisposable _disposable = Disposable.Empty;
 
 #endregion
 
@@ -75,162 +55,221 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             return;
 #endif
 
-        Asserts();
-        CheckAndAddDeselectAll();
-        SetReactiveProperties();
-        AddOptions(_options);
+        Assert.IsNotNull(Caption, "Caption is not set");
+        Assert.IsNotNull(Panel, "OptionsPanel is not set");
+        Assert.IsNotNull(ItemParent, "ItemParent is not set");
+        Assert.IsNotNull(ItemTemplate, "DropdownItem is not set");
 
-        _itemTemplate.gameObject.SetActive(false);
-        _panel.gameObject.SetActive(false);
-        LocalizationSettings.SelectedLocaleChanged += OnChangeLanguage_handler;
+        ObservableOptions.CollectionChanged += ItemsCollectionChanged_handler;
+        Panel.Init();
+        ItemTemplate.gameObject.SetActive(false);
+        AddMultiSelectExtraItems();
+        AddOptions(Options);
+    }
 
-        void Asserts()
+    protected override void OnEnable()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            return;
+#endif
+
+        base.OnEnable();
+        InitEventsHandlers();
+
+        void InitEventsHandlers()
         {
-            Assert.IsNotNull(_caption, "Caption is not set");
-            Assert.IsNotNull(_panel, "OptionsPanel is not set");
-            Assert.IsNotNull(_itemParent, "ItemParent is not set");
-            Assert.IsNotNull(_itemTemplate, "DropdownItem is not set");
-        }
-
-        void SetReactiveProperties()
-        {
-            var db = Disposable.CreateBuilder();
-            var optionsView = ObservableOptions.CreateView(_ => _).AddTo(ref db);
-            _selectedItemIdx.Subscribe(OnSelectedItemidxChanged_handler).AddTo(ref db);
-            _disposable = db.Build();
-
-            optionsView.ViewChanged += OnOptionsCollectionChanged_handler;
+            OnSelectItem += OnSelectedItem_handler;
+            OnMultipleSelectItem += OnMultipleSelectItem_handler;
+            LocalizationSettings.SelectedLocaleChanged += OnChangeLanguage_handler;
         }
     }
 
     protected override void OnDisable()
     {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            return;
+#endif
+
         base.OnDisable();
-        Hide();
+
+        Hide(true);
+        OnSelectItem -= OnSelectedItem_handler;
+        OnMultipleSelectItem -= OnMultipleSelectItem_handler;
+        LocalizationSettings.SelectedLocaleChanged -= OnChangeLanguage_handler;
     }
 
     protected override void OnDestroy()
     {
         base.OnDestroy();
 
-        _disposable.Dispose();
-        LocalizationSettings.SelectedLocaleChanged -= OnChangeLanguage_handler;
+        ObservableOptions.CollectionChanged -= ItemsCollectionChanged_handler;
     }
 
-#if UNITY_EDITOR
-    protected override void OnValidate()
+    /// <summary>
+    /// Mouse Pointer click 
+    /// </summary>
+    public virtual void OnPointerClick(PointerEventData eventData) => ShowHidePanel(eventData);
+
+    /// <summary>
+    /// Keyvboard or Gamepad Click
+    /// </summary>
+    public virtual void OnSubmit(BaseEventData eventData) => ShowHidePanel(eventData);
+
+    /// <summary>
+    /// Check if dropdown is deselected using navigation and use AxisEventData to hide if don't Navigate down (to items)
+    /// </summary>
+    /// <param name="eventData"></param>
+    public override void OnDeselect(BaseEventData eventData)
     {
-        base.OnValidate();
+        base.OnDeselect(eventData);
 
-        if (!IsActive() || Application.isPlaying)
-            return;
-
-        var selectedIdx = Mathf.Clamp(_selectedItemIdx.Value, -1, _options.Count - 1);
-        var selectedOption = selectedIdx == -1 ? _nothingOption : _options[selectedIdx];
-
-        if (_caption)
-            _caption.UpdateContent(selectedOption);
+        if (eventData is AxisEventData axisEventData)
+            if (!(axisEventData.moveVector.y < 0))
+                Hide();
     }
-#endif
+
+    /// <summary>
+    /// When user presses the "Cancel" button or hits the Escape key
+    /// </summary>
+    public virtual void OnCancel(BaseEventData eventData)
+    {
+        Hide();
+
+        if (EventSystem.current)
+            EventSystem.current.SetSelectedGameObject(gameObject);
+    }
 
 #endregion
 
 #region Public methods
 
-    public virtual void OnPointerClick(PointerEventData eventData) => Show();
-
-    public virtual void OnSubmit(BaseEventData eventData) => Show();
-
-    public virtual void OnCancel(BaseEventData eventData) => Hide();
-
+    /// <summary>
+    /// Add Options and create Item for each option
+    /// </summary>
     public void AddOptions(IEnumerable<DropdownOption> options) => ObservableOptions.AddRange(options);
 
-    public void ClearOptions()
+    /// <summary>
+    /// Remove all options and all created Items
+    /// </summary>
+    public void ClearOptions() => ObservableOptions.Clear();
+
+    /// <summary>
+    /// Add items None and Everything for MultipleSelect if it's needed
+    /// </summary>
+    public void AddMultiSelectExtraItems()
     {
-        ObservableOptions.Clear();
-        _selectedItemIdx.Value = -1;
+        if (!MultiSelect) return;
+
+        if (this.AddNoneItem)
+            AddNoneItem();
+
+        if (this.AddEverythingItem)
+            AddEverythingItem();
+
+        void AddNoneItem()
+        {
+            _noneItem = Instantiate(ItemTemplate, ItemParent);
+
+            _noneItem.gameObject.name = "None";
+            _noneItem.Init(this, NothingOption);
+            _noneItem.Toggle.SetIsOnWithoutNotify(true);
+            _noneItem.Toggle.onValueChanged.AddListener(OnValueChange_handler);
+
+            var toggleNavigation = _noneItem.Toggle.navigation;
+            toggleNavigation.mode = Navigation.Mode.Explicit;
+            toggleNavigation.selectOnUp = this;
+            _noneItem.Toggle.navigation = toggleNavigation;
+
+            Panel.AddSelectable(_noneItem.Toggle);
+
+            void OnValueChange_handler(bool value)
+            {
+                if (value)
+                    ToggleAllItems(false);
+                else
+                    ToggleNoneItem(true);
+            }
+        }
+
+        void AddEverythingItem()
+        {
+            _everythingItem = Instantiate(ItemTemplate, ItemParent);
+
+            _everythingItem.gameObject.name = "Everything";
+            _everythingItem.Init(this, EverythingOption);
+            _everythingItem.Toggle.SetIsOnWithoutNotify(false);
+            _everythingItem.Toggle.onValueChanged.AddListener(OnValueChange_handler);
+
+            var toggleNavigation = _everythingItem.Toggle.navigation;
+            toggleNavigation.mode = Navigation.Mode.Explicit;
+            _everythingItem.Toggle.navigation = toggleNavigation;
+
+            Panel.AddSelectable(_everythingItem.Toggle);
+
+            void OnValueChange_handler(bool value)
+            {
+                if (value)
+                    ToggleAllItems(true);
+                else
+                {
+                    if (this.AddNoneItem)
+                        _noneItem.Toggle.isOn = true;
+                    else if (_items.Count > 0)
+                        ToggleItem(0, true);
+                }
+            }
+        }
     }
 
-    public void SelectItem(int index)
+    public void ToggleItem(int index, bool value)
     {
         if (index < 0 || index >= ObservableOptions.Count)
             return;
 
-        if (_items[index].Toggle.isOn) return;
-
-        _items[index].Toggle.isOn = true;
+        if (_items[index].Toggle.isOn != value)
+            _items[index].Toggle.isOn = value;
     }
 
-    public void DeselectItem(int index)
-    {
-        if (index < 0 || index >= ObservableOptions.Count)
-            return;
-
-        if (!_items[index].Toggle.isOn) return;
-
-        _items[index].Toggle.isOn = false;
-    }
-
-    public void DeselectAllItems()
+    public void ToggleAllItems(bool value)
     {
         if (!MultiSelect)
             return;
 
-        foreach (var item in _items)
+        for (var idx = 0; idx < _items.Count; idx++)
         {
-            if (item.Toggle.isOn)
-                item.Toggle.SetIsOnWithoutNotify(false);
-        }
-
-        _selectedItemIdx.Value = -1;
-    }
-
-    public void RefreshCaption()
-    {
-        DropdownOption data = _nothingOption;
-
-        if (ObservableOptions.Count > 0 && _selectedItemIdx.Value >= 0)
-        {
-            if (MultiSelect)
+            var item = _items[idx];
+            if (item.Toggle.isOn != value)
             {
-                var selectedItems = _items.Where(item => item.Toggle.isOn).ToArray();
-                int selectedItemsCount = selectedItems.Length;
-
-                data = selectedItemsCount switch
-                       {
-                           0 => _nothingOption,
-                           1 => ObservableOptions[_items.IndexOf(selectedItems[0])],
-                           _ when selectedItemsCount == _items.Count => _everythingOption,
-                           _ => _mixedOption
-                       };
+                OnMultipleSelectItem?.Invoke(idx, value);
+                item.Toggle.SetIsOnWithoutNotify(value);
             }
-            else
-                data = ObservableOptions[Mathf.Clamp(_selectedItemIdx.Value, 0, ObservableOptions.Count - 1)];
-
         }
 
-        _caption.UpdateContent(data);
+        SetNoneAndEverythingItems();
     }
 
-    public void Show()
+    public void Show(bool instantly = false)
     {
         if (_isDropdownShown)
             return;
 
-        _panel.Show(Animation);
-        //TODO: (cat) set animation for Caption
-        //TODO: (cat) Add navigation for items (for first item navigation up will be caption and reverse)
+        _isDropdownShown = true;
+        Caption.SetArrow(true);
+        Panel.Show(instantly ? EDropdownAnimation.None : AnimationType, PanelAnimSpeed);
     }
 
-    public void Hide()
+    public void Hide(bool instantly = false)
     {
         if (!_isDropdownShown)
             return;
 
-        //TODO: (cat) set animation for Caption
-        _panel.Hide(Animation);
+        SelectDropdown();
 
-        Select();
+        _isDropdownShown = false;
+        Caption.SetArrow(false);
+        Panel.Hide(instantly ? EDropdownAnimation.None : AnimationType, PanelAnimSpeed);
     }
 
 #endregion
@@ -239,12 +278,17 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 
     void CreateItem(DropdownOption optionData)
     {
-        DropdownItem item = Instantiate(_itemTemplate, _itemParent);
+        DropdownItem item = Instantiate(ItemTemplate, ItemParent);
 
-        item.Init(optionData);
+        item.Init(this, optionData);
         item.Toggle.SetIsOnWithoutNotify(optionData.IsOn);
         item.Toggle.onValueChanged.AddListener(value => OnToggleItem_handler(item, value));
 
+        var toggleNavigation = item.Toggle.navigation;
+        toggleNavigation.mode = Navigation.Mode.Explicit;
+        item.Toggle.navigation = toggleNavigation;
+
+        Panel.AddSelectable(item.Toggle);
         _items.Add(item);
     }
 
@@ -258,60 +302,144 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
         Destroy(itemToDestroy);
     }
 
-    void CheckAndAddDeselectAll()
+    void ShowHidePanel(BaseEventData eventData)
     {
-        if (!_addDeselectAllOption) return;
+        //Check if was clicked TargetGraphic, to prevent action when click on child Selectable
+        if (eventData.selectedObject != targetGraphic.gameObject) return;
 
-        _deselectAllItem = Instantiate(_itemTemplate, _itemParent);
+        if (_isDropdownShown)
+            Hide();
+        else
+            Show();
+    }
 
-        _deselectAllItem.Init(_nothingOption);
-        _deselectAllItem.Toggle.SetIsOnWithoutNotify(true);
-        _deselectAllItem.Toggle.onValueChanged.AddListener(OnDeselectAllToggle_handler);
+    void RefreshCaption()
+    {
+        DropdownOption data = NothingOption;
 
-        void OnDeselectAllToggle_handler(bool value)
+        if (ObservableOptions.Count > 0)
         {
-            if (value)
-                DeselectAllItems();
+            if (MultiSelect)
+            {
+                var selectedItems = _items.Where(item => item.Toggle.isOn).ToArray();
+                int selectedItemsCount = selectedItems.Length;
+
+                data = selectedItemsCount switch
+                       {
+                           0 => NothingOption,
+                           1 => ObservableOptions[_items.IndexOf(selectedItems[0])],
+                           _ when selectedItemsCount == _items.Count => EverythingOption,
+                           _ => MixedOption
+                       };
+            }
             else
-                ToggleDeselectAllItem(true);
+                data = _previousSelectedItem ? ObservableOptions.First(option => option.GUID.Equals(_previousSelectedItem.GUID)) : data;
+        }
+
+        Caption.UpdateContent(data);
+    }
+
+    void SetNoneAndEverythingItems()
+    {
+        var selectedItemsCount = _items.Where(item => item.Toggle.isOn).ToArray().Length;
+
+        ToggleNoneItem(selectedItemsCount == 0);
+        ToggleEverythingItem(selectedItemsCount == _items.Count);
+    }
+
+    void ToggleNoneItem(bool value)
+    {
+        if (!_noneItem) return;
+        _noneItem.Toggle.SetIsOnWithoutNotify(value);
+    }
+
+    void ToggleEverythingItem(bool value)
+    {
+        if (!AddEverythingItem) return;
+        _everythingItem.Toggle.SetIsOnWithoutNotify(value);
+    }
+
+    void SetItemsOrderAndNavigatino()
+    {
+        SetOrderForExtraItems();
+        SetItemsNavigation();
+
+        void SetOrderForExtraItems()
+        {
+            var lastChildIdx = ItemParent.childCount - 1;
+
+            if (_noneItem && _noneItem.transform.GetSiblingIndex() != 0)
+                _noneItem.transform.SetSiblingIndex(0);
+
+            if (_everythingItem && _everythingItem.transform.GetSiblingIndex() != lastChildIdx)
+                _everythingItem.transform.SetSiblingIndex(lastChildIdx);
+        }
+
+        void SetItemsNavigation()
+        {
+            if (_noneItem)
+            {
+                var toggleNavigation = _noneItem.Toggle.navigation;
+                toggleNavigation.selectOnDown = _items.Count > 0 ? _items[0].Toggle : _everythingItem ? _everythingItem.Toggle : null;
+                _noneItem.Toggle.navigation = toggleNavigation;
+            }
+
+            if (_everythingItem)
+            {
+                var toggleNavigation = _everythingItem.Toggle.navigation;
+                toggleNavigation.selectOnUp = _items.Count > 0 ? _items[_items.Count - 1].Toggle : _noneItem ? _noneItem.Toggle : this;
+                _everythingItem.Toggle.navigation = toggleNavigation;
+            }
+
+            for (int i = 0; i < _items.Count; i++)
+            {
+                var item = _items[i];
+                var toggleNavigation = item.Toggle.navigation;
+                toggleNavigation.selectOnUp = (i - 1) >= 0 ? _items[i - 1].Toggle : _noneItem ? _noneItem.Toggle : this;
+                toggleNavigation.selectOnDown = (i + 1) < _items.Count ? _items[i + 1].Toggle : _everythingItem ? _everythingItem.Toggle : null;
+                item.Toggle.navigation = toggleNavigation;
+            }
         }
     }
 
-    void ToggleDeselectAllItem(bool value)
+    void SelectDropdown()
     {
-        if (!_deselectAllItem) return;
-        _deselectAllItem.Toggle.SetIsOnWithoutNotify(value);
+        if (!EventSystem.current) return;
+
+        var currentSelectedGO = EventSystem.current.currentSelectedGameObject;
+        if (!currentSelectedGO) return;
+
+        bool selectedIsItem = _items.Any(item => currentSelectedGO == item.gameObject) ||
+                              currentSelectedGO == _noneItem?.gameObject ||
+                              currentSelectedGO == _everythingItem?.gameObject;
+
+        if (selectedIsItem)
+            EventSystem.current.SetSelectedGameObject(gameObject);
     }
 
     void OnToggleItem_handler(DropdownItem selectedItem, bool isOn)
     {
         if (MultiSelect)
         {
-            var selectedItemsCount = _items.Where(item => item.Toggle.isOn).ToArray().Length;
-            ToggleDeselectAllItem(selectedItemsCount == 0);
-            OnSelectedItemidxChanged_handler(_items.IndexOf(selectedItem));
+            var idx = _items.IndexOf(selectedItem);
+            OnMultipleSelectItem?.Invoke(idx, isOn);
+            SetNoneAndEverythingItems();
         }
         else
         {
-            var sameAsPrevious = _selectedItemIdx.Value >= 0 && _items[_selectedItemIdx.Value].GUID.Equals(selectedItem.GUID);
+            var sameItem = _previousSelectedItem ? _previousSelectedItem.GUID.Equals(selectedItem.GUID) : false;
+
             if (isOn)
             {
-                _items[_selectedItemIdx.Value].Toggle.SetIsOnWithoutNotify(false);
-                _selectedItemIdx.Value = _items.IndexOf(selectedItem);
+                if (_previousSelectedItem && !sameItem)
+                    _previousSelectedItem.Toggle.SetIsOnWithoutNotify(false);
 
-                ToggleDeselectAllItem(false);
+                _previousSelectedItem = selectedItem;
+                OnSelectItem?.Invoke(_items.IndexOf(selectedItem));
             }
-            else if (sameAsPrevious)
+            else if (sameItem)
             {
-                if (_deselectAllItem)
-                {
-                    ToggleDeselectAllItem(true);
-                    _selectedItemIdx.Value = -1;
-                }
-                else
-                {
-                    selectedItem.Toggle.SetIsOnWithoutNotify(true);
-                }
+                selectedItem.Toggle.SetIsOnWithoutNotify(true);
             }
 
             Hide();
@@ -320,8 +448,11 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 
     void OnChangeLanguage_handler(Locale obj)
     {
-        if (_deselectAllItem)
-            _deselectAllItem.UpdateContent(_nothingOption);
+        if (_noneItem)
+            _noneItem.UpdateContent(NothingOption);
+
+        if (_everythingItem)
+            _everythingItem.UpdateContent(EverythingOption);
 
         for (int i = 0; i < ObservableOptions.Count; i++)
             _items[i].UpdateContent(ObservableOptions[i]);
@@ -329,27 +460,25 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
         RefreshCaption();
     }
 
-    void OnSelectedItemidxChanged_handler(int idx)
-    {
-        OnToggleItem2?.Invoke(idx);
+    void OnSelectedItem_handler(int idx) => RefreshCaption();
 
-        RefreshCaption();
-    }
+    void OnMultipleSelectItem_handler(int idx, bool value) => RefreshCaption();
 
-    void OnOptionsCollectionChanged_handler(in SynchronizedViewChangedEventArgs<DropdownOption, DropdownOption> e)
+    void ItemsCollectionChanged_handler(in NotifyCollectionChangedEventArgs<DropdownOption> e)
     {
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (var item in e.NewValues)
+                foreach (var item in e.NewItems)
                     CreateItem(item);
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (var item in e.OldValues)
+                foreach (var item in e.OldItems)
                     DestroyItem(item);
                 break;
         }
 
+        SetItemsOrderAndNavigatino();
         RefreshCaption();
     }
 

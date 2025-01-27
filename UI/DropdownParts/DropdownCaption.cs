@@ -1,17 +1,17 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 
 namespace Helpers.UI
 {
 public class DropdownCaption : DropdownElementBase
 {
-    [field: SerializeField] public Image ImgArrow;
-    
+    [SerializeField] RectTransform _arrowRT;
+
+    Vector3 _showScale = new Vector3(1, -1, 1);
+
     public void SetArrow(bool show)
     {
-        //TODO: (cat) add animation
-        if (ImgArrow)
-            ImgArrow.enabled = show;
+        if (_arrowRT)
+            _arrowRT.localScale = show ? _showScale : Vector3.one;
     }
 }
 }
