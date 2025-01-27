@@ -39,26 +39,26 @@ public class FactoryGO
             _prefab = prefab;
         }
 
-        public Builder WithParents(Transform poolActive, Transform poolInactive)
+        public Builder SetParents(Transform poolActive, Transform poolInactive)
         {
             _poolActive = poolActive;
             _poolInactive = poolInactive;
             return this;
         }
 
-        public Builder WithItemInitConfig(object config)
+        public Builder SetItemInitConfig(object config)
         {
             _config = config;
             return this;
         }
 
-        public Builder WithPreloadCount(int preloadCount)
+        public Builder SetPreloadCount(int preloadCount)
         {
             _preloadCount = preloadCount;
             return this;
         }
 
-        public Builder WithMaxCount(int maxCount)
+        public Builder SetMaxCount(int maxCount)
         {
             _maxCount = maxCount;
             return this;

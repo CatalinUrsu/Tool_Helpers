@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Helpers.PoolSystem
 {
-public class Pool<T> : IPool<T>
+public class Pool<T>
 {
     readonly Func<Action<T>, T> _createFunc;
     readonly Action<T> _onGet;
