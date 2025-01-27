@@ -5,7 +5,7 @@ using UnityEngine.UI;
 // but still capable of capturing user input event. Usefull for lage fulscreen
 // areas to capture swipe/tap gestures without drawing transparent image and
 // wasting fillrate.
-namespace Helpers
+namespace Helpers.UI
 {
 [AddComponentMenu("UI/Helpers/Dummy Image")]
 [RequireComponent(typeof(CanvasRenderer))]
