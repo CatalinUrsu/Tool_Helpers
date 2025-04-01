@@ -19,7 +19,7 @@ public class ProjectInitializer : EditorWindow
         "Content/Materials", "Content/Prefabs",
         "Content/Scenes", "Content/Source",
         "Content/Textures", "Content/Textures/Atlases",
-        "Content/Textures/UI"
+        "Content/Textures/UI", "Plugins"
     };
     
     static ProjectInitializer _window;
@@ -41,9 +41,9 @@ public class ProjectInitializer : EditorWindow
 
 #endregion
 
-    private void OnEnable() => LoadPrefsSettings();
+    void OnEnable() => LoadPrefsSettings();
 
-    private void OnDisable() => SavePrefsSettings();
+    void OnDisable() => SavePrefsSettings();
 
     void OnGUI()
     {

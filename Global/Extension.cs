@@ -22,8 +22,8 @@ public static class Extension
 
 #endregion
 
-#if DOTWEEN
 #region DoTween
+#if DOTWEEN
 
     /// <summary>
     /// If tween IsActive or IsPlaying, than End (Kill of Complete)
@@ -43,8 +43,8 @@ public static class Extension
         }
     }
 
-#endregion
 #endif
+#endregion
 
 #region Object
 

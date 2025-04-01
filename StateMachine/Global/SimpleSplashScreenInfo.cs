@@ -1,6 +1,4 @@
-using Helpers.StateMachine;
-
-namespace Source.StateMachine
+namespace Helpers.StateMachine
 {
 public struct SimpleSplashScreenInfo : ISplashScreenInfo
 {
