@@ -34,10 +34,14 @@ public class DropdownPanel : MonoBehaviour
         _canvasGroup = GetComponent<CanvasGroup>();
         _rt = GetComponent<RectTransform>();
         _sizeDelta = _rt.sizeDelta;
+#if DOTWEEN
         _tween.SetUpdate(true);
+#endif
     }
 
+#if DOTWEEN
     void OnDestroy() => _tween.CheckAndEnd();
+#endif
 
 #endregion
 
