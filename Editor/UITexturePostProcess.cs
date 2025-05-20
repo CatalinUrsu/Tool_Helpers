@@ -10,7 +10,7 @@ public class UISpritePostProcess : AssetPostprocessor
     {
         var name = Path.GetFileName(assetPath);
 
-        if (name.StartsWith("T_ui_"))
+        if (name.ToLower().StartsWith("t_ui_"))
             PreprocessUISprites(name);
     }
 
