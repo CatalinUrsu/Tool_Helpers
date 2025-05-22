@@ -23,6 +23,7 @@ public static class PackagesResolver
     static PackageInfo[] _packages = new[]
     {
         new PackageInfo { Name = "com.innogames.asset-relations-viewer", Url = "https://github.com/innogames/asset-relations-viewer.git" },
+        new PackageInfo { Name = "com.dbrizov.naughtyattributes", Url = "https://github.com/dbrizov/NaughtyAttributes.git#upm" },
         new PackageInfo { Name = "com.github-glitchenzo.nugetforunity", Url = "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity" },
         new PackageInfo { Name = "com.cysharp.unitask", Url = "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask" },
         new PackageInfo { Name = "com.cysharp.memorypack", Url = "https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity" },

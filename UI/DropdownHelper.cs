@@ -2,6 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using NaughtyAttributes;
 using ObservableCollections;
 using UnityEngine.Assertions;
 using UnityEngine.EventSystems;
@@ -18,6 +19,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 {
 #region Fields
 
+    [HorizontalLine(color: EColor.Red)]
     [field: SerializeField] public DropdownCaption Caption;
     [field: SerializeField] public DropdownPanel Panel;
     [field: SerializeField] public DropdownItem ItemTemplate;
