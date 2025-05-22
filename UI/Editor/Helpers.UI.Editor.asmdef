@@ -1,0 +1,20 @@
+{
+    "name": "Helpers.UI.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:16aa32b06da7c104a994d22b81c651b2",
+        "GUID:a63dc12529f7e9942aa0087783d37585",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
