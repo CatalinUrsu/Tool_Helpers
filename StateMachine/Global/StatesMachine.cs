@@ -13,7 +13,24 @@ public class StatesMachine
     public StatesMachine(params IState[] states)
     {
         _states = new Dictionary<Type, IState>();
+        
+        AddStates(states);
+    }
+    
+    public virtual async UniTask Enter<TState>() where TState : class, IStateEnter
+    {
+        var state = await ChangeState<TState>();
+        await state.Enter();
+    }
 
+    public virtual async UniTask Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
+    {
+        var state = await ChangeState<TState>();
+        await state.Enter(payload);
+    }
+    
+    public void AddStates(IState[] states)
+    {
         foreach (var state in states)
         {
             if (_states.ContainsKey(state.GetType()))
@@ -22,18 +39,6 @@ public class StatesMachine
             state.StatesMachine = this;
             _states.Add(state.GetType(), state);
         }
-    }
-    
-    public virtual async UniTask Enter<TState>(Action onLoaded = null) where TState : class, IStateEnter
-    {
-        var state = await ChangeState<TState>();
-        state.Enter().Forget();
-    }
-
-    public virtual async UniTask Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
-    {
-        var state = await ChangeState<TState>();
-        state.Enter(payload).Forget();
     }
 
     protected virtual async UniTask<TState> ChangeState<TState>() where TState : class, IState
