@@ -1,10 +1,10 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 
 namespace Helpers.StateMachine
 {
-public interface ISplashScreen<T> where T : ISplashScreenInfo
+public interface ISplashScreen
 {
-    public UniTask ShowPanel(T config);
+    public UniTask ShowPanel<T>(T config) where T : ISplashScreenInfo;
     public UniTask HidePanel();
 }
 }
