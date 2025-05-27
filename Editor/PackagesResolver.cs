@@ -25,6 +25,7 @@ public static class PackagesResolver
         new PackageInfo { Name = "com.innogames.asset-relations-viewer", Url = "https://github.com/innogames/asset-relations-viewer.git" },
         new PackageInfo { Name = "com.dbrizov.naughtyattributes", Url = "https://github.com/dbrizov/NaughtyAttributes.git#upm" },
         new PackageInfo { Name = "com.github-glitchenzo.nugetforunity", Url = "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity" },
+        new PackageInfo { Name = "com.svermeulen.extenject", Url = "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source" },
         new PackageInfo { Name = "com.cysharp.unitask", Url = "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask" },
         new PackageInfo { Name = "com.cysharp.memorypack", Url = "https://github.com/Cysharp/MemoryPack.git?path=src/MemoryPack.Unity/Assets/MemoryPack.Unity" },
         new PackageInfo { Name = "com.cysharp.r3", Url = "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity" },

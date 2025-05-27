@@ -16,11 +16,11 @@ public class UISpritePostProcess : AssetPostprocessor
 
     void PreprocessUISprites(string name)
     {
-        var importer = (TextureImporter) assetImporter;
-            
+        var importer = (TextureImporter)assetImporter;
+
         if (importer.textureType == TextureImporterType.Sprite)
             return;
-            
+
         Debug.Log($"[UISpritePostProcess] Processing UI sprite - {name} ");
         importer.textureType = TextureImporterType.Sprite;
         importer.mipmapEnabled = false;
