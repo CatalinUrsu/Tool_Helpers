@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using UnityEngine.Assertions;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
@@ -22,20 +22,23 @@ public class SceneLoaderService : IServiceSceneLoader
 
     public SceneLoaderService(IServiceLoadingProgress serviceLoadingProgress) => _serviceLoadingProgress = serviceLoadingProgress;
     
-    /// <summary>
-    /// Before load scene which loading progress should be tracked, WhileLoadProgressCount in IServiceLoadingProgress should be set to total number of scenes to load for correct progress tracking 
-    /// </summary>
-    /// <returns></returns>
-    public async UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams)
-    {
-        if (sceneLoadParams.TrackProgress)
-            Assert.AreNotEqual(_serviceLoadingProgress.LoadProgressCount, 0, "Before load scene which loading progress should be tracked, WhileLoadProgressCount in IServiceLoadingProgress should " +
-                                                                             "be set to total number of scenes to load for correct progress tracking");
-        
-        if (!String.IsNullOrEmpty(sceneLoadParams.Prompt))
-            _serviceLoadingProgress.UpdateLoadingPrompt(sceneLoadParams.Prompt);
 
-        return await GetSceneLoadResult(sceneLoadParams);
+    public async UniTask<SceneLoadResult[]> LoadScenes(params SceneLoadParams[] sceneLoadParams)
+    {
+        _serviceLoadingProgress.LoadProgressCount = sceneLoadParams.Count(loadParams => loadParams.TrackProgress);
+
+        var scenesLoadTasks = sceneLoadParams.Select(GetSceneLoadTask).ToArray();
+        return await UniTask.WhenAll(scenesLoadTasks);
+
+        async UniTask<SceneLoadResult> GetSceneLoadTask(SceneLoadParams loadParams)
+            {
+                var sceneLoadResult = await GetSceneLoadResult(loadParams);
+
+                if (!string.IsNullOrEmpty(loadParams.Prompt))
+                    _serviceLoadingProgress.UpdateLoadingPrompt(loadParams.Prompt);
+
+                return sceneLoadResult;
+            }
     }
 
     public async UniTask UnloadScene(string sceneName)
@@ -67,9 +70,9 @@ public class SceneLoaderService : IServiceSceneLoader
     {
         var loadingSceneData = new SceneLoadResult();
 
-        if (_loadedAddressableScene.ContainsKey(sceneLoadParams.SceneName))
+        if (_loadedAddressableScene.TryGetValue(sceneLoadParams.SceneName, out var value))
         {
-            loadingSceneData.LoadedScene = _loadedAddressableScene[sceneLoadParams.SceneName].Scene;
+            loadingSceneData.LoadedScene = value.Scene;
         }
         else
         {
