@@ -6,17 +6,9 @@ using System.Collections.Generic;
 
 namespace Helpers.StateMachine
 {
-/// <summary>
-/// Service to track loading and unloading of content. 
-/// At the start of each use, need to set <b>_loadingsCount</b>, it allows to add other loadings during current one 
-/// </summary>
 public class LoadingProgressService : IServiceLoadingProgress
 {
 #region Fields
-
-    List<float> _unloadingProgresses = new();
-    List<SceneLoadProgress> _loadingProgresses = new();
-    static readonly TimeSpan _delayTimeSpan = TimeSpan.FromSeconds(.25f);
 
     public int LoadProgressCount { get; set; }
     public bool UnloadsAreFinished { get; private set; }
@@ -24,6 +16,9 @@ public class LoadingProgressService : IServiceLoadingProgress
     public event Action<string> OnUpdateLoadingPrompt;
 
     float _unloadProgress;
+    readonly List<float> _unloadingProgresses = new();
+    readonly List<SceneLoadProgress> _loadingProgresses = new();
+    static readonly TimeSpan _delayTimeSpan = TimeSpan.FromSeconds(.25f);
 
 #endregion
 
@@ -39,7 +34,7 @@ public class LoadingProgressService : IServiceLoadingProgress
         UnloadsAreFinished = true;
 
         OnUpdateProgress?.Invoke(0);
-        OnUpdateLoadingPrompt?.Invoke(String.Empty);
+        OnUpdateLoadingPrompt?.Invoke(string.Empty);
     }
     
     public void RegisterLoadingProgress(SceneLoadProgress sceneLoadProgress) => _loadingProgresses.Add(sceneLoadProgress);
@@ -56,7 +51,7 @@ public class LoadingProgressService : IServiceLoadingProgress
 
     public void UpdateProgress()
     {
-        _unloadProgress = _unloadingProgresses.Count() != 0 ? _unloadingProgresses.Average(progress => progress) : 1;
+        _unloadProgress = _unloadingProgresses.Count != 0 ? _unloadingProgresses.Average(progress => progress) : 1;
         var loadProgress = LoadProgressCount != 0 ? _loadingProgresses.Sum(progress => progress.GetAvgProgress()) / LoadProgressCount : 0;
         OnUpdateProgress?.Invoke((loadProgress + _unloadProgress) / 2);
     }

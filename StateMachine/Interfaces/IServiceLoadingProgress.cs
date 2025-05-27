@@ -5,8 +5,8 @@ namespace Helpers.StateMachine
 {
 public interface IServiceLoadingProgress
 {
-    public int LoadProgressCount { get; set; }
-    public bool UnloadsAreFinished { get; }
+    int LoadProgressCount { get; set; }
+    bool UnloadsAreFinished { get; }
     event Action<float> OnUpdateProgress;
     event Action<string> OnUpdateLoadingPrompt;
 
@@ -19,7 +19,9 @@ public interface IServiceLoadingProgress
     void RegisterLoadingProgress(SceneLoadProgress sceneLoadProgress);
 
     /// <summary>
-    /// Store <b>UnloadingTasks</b> and await till all are finished. Used on StateExit
+    /// Store <b>UnloadingTasks</b>. It uses UnitaskVoid to await till tasks are finished, but don't block thread.
+    /// To check if all tasks are finished use <see cref="UnloadsAreFinished"/> property.
+    /// <b> Useful when it's needed to unload and load objects in parallel. </b> 
     /// </summary>
     UniTaskVoid RegisterUnloadingTasks(params UniTask[] unloadingTasks);
     

@@ -36,10 +36,7 @@ public class CameraService : IServiceCamera
             _cachedCameras.Remove(camera.name);
     }
 
-    public Camera GetMainCamera()
-    {
-        return _mainCamera;
-    }
+    public Camera GetMainCamera() => _mainCamera;
 
     public Camera GetCameraByName(string name)
     {

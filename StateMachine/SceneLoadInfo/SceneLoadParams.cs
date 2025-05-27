@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine.SceneManagement;
+﻿using UnityEngine.SceneManagement;
 
 namespace Helpers.StateMachine
 {
@@ -14,8 +13,8 @@ public struct SceneLoadParams
 
     public class Builder
     {
-        string _sceneName = String.Empty;
-        string _prompt = String.Empty;
+        readonly string _sceneName;
+        string _prompt = string.Empty;
         bool _isAddressable = true;
         bool _trackProgress = true;
         bool _setSceneActive;
