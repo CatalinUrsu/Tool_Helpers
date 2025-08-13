@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
@@ -18,6 +19,14 @@ public static class Extension
     {
         foreach (var item in source)
             action(item);
+    }
+    
+    public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
+    {
+        var items = source as T[] ?? source.ToArray();
+        
+        for (int i = 0; i < items.Length; i++) 
+            action(items.ElementAt(i), i);
     }
 
 #endregion
