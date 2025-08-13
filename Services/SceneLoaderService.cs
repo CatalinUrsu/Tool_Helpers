@@ -1,31 +1,31 @@
 using System;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceProviders;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
 public class SceneLoaderService : IServiceSceneLoader
 {
 #region Fieds
 
     readonly Dictionary<string, SceneInstance> _loadedAddressableScene = new();
-    readonly IServiceLoadingProgress _serviceLoadingProgress;
+    readonly IServiceProgressTracking _serviceProgressTracking;
 
 #endregion
 
 #region Public methods
 
-    public SceneLoaderService(IServiceLoadingProgress serviceLoadingProgress) => _serviceLoadingProgress = serviceLoadingProgress;
+    public SceneLoaderService(IServiceProgressTracking serviceProgressTracking) => _serviceProgressTracking = serviceProgressTracking;
     
 
     public async UniTask<SceneLoadResult[]> LoadScenes(params SceneLoadParams[] sceneLoadParams)
     {
-        _serviceLoadingProgress.LoadProgressCount = sceneLoadParams.Count(loadParams => loadParams.TrackProgress);
+        _serviceProgressTracking.LoadProgressCount = sceneLoadParams.Count(loadParams => loadParams.TrackProgress);
 
         var scenesLoadTasks = sceneLoadParams.Select(GetSceneLoadTask).ToArray();
         return await UniTask.WhenAll(scenesLoadTasks);
@@ -34,8 +34,8 @@ public class SceneLoaderService : IServiceSceneLoader
             {
                 var sceneLoadResult = await GetSceneLoadResult(loadParams);
 
-                if (!string.IsNullOrEmpty(loadParams.Prompt))
-                    _serviceLoadingProgress.UpdateLoadingPrompt(loadParams.Prompt);
+                if (!string.IsNullOrEmpty(loadParams.LoadingTip))
+                    _serviceProgressTracking.UpdateLoadingTip(loadParams.LoadingTip);
 
                 return sceneLoadResult;
             }
@@ -112,12 +112,12 @@ public class SceneLoaderService : IServiceSceneLoader
 
     IProgress<float> GetNewLoadingProgress(SceneLoadResult sceneLoadResult)
     {
-        _serviceLoadingProgress.RegisterLoadingProgress(sceneLoadResult.SceneLoadProgress);
+        _serviceProgressTracking.RegisterLoadingProgress(sceneLoadResult.SceneLoadProgress);
 
         var progress = Progress.CreateOnlyValueChanged<float>(x =>
         {
             sceneLoadResult.SceneLoadProgress.SceneProgress = x;
-            _serviceLoadingProgress.UpdateProgress();
+            _serviceProgressTracking.UpdateProgress();
         });
         return progress;
     }
