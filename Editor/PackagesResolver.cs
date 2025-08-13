@@ -45,28 +45,27 @@ public static class PackagesResolver
         if (!GetManifest() || !GetDependencies()) return;
 
         foreach (var package in _packages)
-            AddPackage(package);
-        AssetDatabase.Refresh();
-
-        DefineSymbolManager.AddDefineSymbol("NUGET_INSTALLED");
-        AssetDatabase.Refresh();
-
-        void AddPackage(PackageInfo packageInfo)
         {
-            if (_dependencies.ContainsKey(packageInfo.Name)) return;
-
-            _dependencies[packageInfo.Name] = packageInfo.Url;
-            File.WriteAllText(_manifestPath, _manifest.ToString());
-            Debug.LogWarning($"[GitPackagesResolver]: Installed Package: {packageInfo.Name}");
+            if (!_dependencies.ContainsKey(package.Name))
+            {
+                _dependencies[package.Name] = package.Url;
+                Debug.LogWarning($"[GitPackagesResolver]: Installed Package: {package.Name}");
+            }
         }
+
+        File.WriteAllText(_manifestPath, _manifest.ToString());
+        AssetDatabase.Refresh();
     }
 
     [MenuItem("Tools/Helpers/Resolver_Nuget")]
     public static void AddNugetPackags()
     {
+        DefineSymbolManager.AddDefineSymbol("NUGET_INSTALLED");
+        AssetDatabase.Refresh();
+        
 #if NUGET_INSTALLED
-        NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("MemoryPack", null));
         NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("R3", null));
+        NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("MemoryPack", null));
         NugetForUnity.NugetPackageInstaller.InstallIdentifier(new NugetForUnity.Models.NugetPackageIdentifier("ObservableCollections", null));
 
         AssetDatabase.Refresh();

@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Helpers.PoolSystem
 {
@@ -12,7 +11,7 @@ public class FactoryGO
 
         PooledObject CreateAction(Action<PooledObject> returnToPoolAction)
         {
-            var pooledObject = Object.Instantiate(prefab, poolInactive);
+            var pooledObject = UnityEngine.Object.Instantiate(prefab, poolInactive);
             pooledObject.Init(returnToPoolAction, initConfig);
 
             return pooledObject;
@@ -22,7 +21,7 @@ public class FactoryGO
 
         void GetAction(PooledObject obj) => obj.transform.parent = poolActive;
 
-        void DestroyAction(PooledObject obj) => Object.Destroy(obj.gameObject);
+        void DestroyAction(PooledObject obj) => UnityEngine.Object.Destroy(obj.gameObject);
     }
 
     public class Builder
