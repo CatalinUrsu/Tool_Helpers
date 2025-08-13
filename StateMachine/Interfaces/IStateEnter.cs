@@ -4,6 +4,6 @@ namespace Helpers.StateMachine
 {
 public interface IStateEnter : IState
 {
-    UniTaskVoid Enter();
+    UniTask Enter();
 }
 }
