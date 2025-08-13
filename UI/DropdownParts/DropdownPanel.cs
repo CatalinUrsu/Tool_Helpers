@@ -1,12 +1,11 @@
-﻿using Helpers.UI;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 #if DOTWEEN
 using DG.Tweening;
 #endif
 
-namespace Helpers
+namespace Helpers.UI
 {
 [RequireComponent(typeof(RectTransform), typeof(ScrollRect), typeof(NavigationScroll))]
 public class DropdownPanel : MonoBehaviour
