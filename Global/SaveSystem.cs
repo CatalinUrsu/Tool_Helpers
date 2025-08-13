@@ -1,39 +1,32 @@
 ﻿using System;
 using Constants;
 using System.IO;
-using System.Text;
-using Newtonsoft.Json;
+using MemoryPack;
 
 namespace Helpers
 {
 public static class SaveSystem
 {
-    //TODO: (cat) Use MemoryPack instead of Newtonsoft.Json
     public static void Save<T>(string filePath, T sessionElement)
     {
         if (Directory.Exists(ConstSession.SAVES_FOLDER_PATH) == false)
             Directory.CreateDirectory(ConstSession.SAVES_FOLDER_PATH);
 
-        using (FileStream fs = File.Open(filePath, FileMode.Create))
-        {
-            BinaryWriter writer = new BinaryWriter(fs);
-            byte[] plainTextBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(sessionElement));
-            writer.Write(Convert.ToBase64String(plainTextBytes));
-            writer.Flush();
-        }
+        using var fs = File.Open(filePath, FileMode.Create);
+        var writer = new BinaryWriter(fs);
+        var serializedData = MemoryPackSerializer.Serialize(sessionElement);
+        writer.Write(Convert.ToBase64String(serializedData));
+        writer.Flush();
     }
     
     public static T Load<T>(string filePath) where T: class
     {
         if (!Directory.Exists(ConstSession.SAVES_FOLDER_PATH) || !File.Exists(filePath)) return null;
 
-        using (FileStream fs = File.Open(filePath, FileMode.Open))
-        {
-            BinaryReader reader = new BinaryReader(fs);
-            byte[] encodedBytes = Convert.FromBase64String(reader.ReadString());
-            var value = Encoding.UTF8.GetString(encodedBytes);
-            return JsonConvert.DeserializeObject<T>(value);;
-        }
+        using var fs = File.Open(filePath, FileMode.Open);
+        var reader = new BinaryReader(fs);
+        var encodedBytes = Convert.FromBase64String(reader.ReadString());
+        return MemoryPackSerializer.Deserialize<T>(encodedBytes);;
     }
 
     public static void ResetSaves()
