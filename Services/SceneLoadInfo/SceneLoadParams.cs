@@ -1,11 +1,11 @@
 ﻿using UnityEngine.SceneManagement;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
 public struct SceneLoadParams
 {
     public string SceneName { get; private set; }
-    public string Prompt { get; private set; }
+    public string LoadingTip { get; private set; }
     public bool IsAddressable { get; private set; }
     public bool TrackProgress { get; private set; }
     public bool SetSceneActive { get; private set; }
@@ -14,8 +14,8 @@ public struct SceneLoadParams
     public class Builder
     {
         readonly string _sceneName;
-        string _prompt = string.Empty;
-        bool _isAddressable = true;
+        string _loadingTip = string.Empty;
+        bool _isAddressable;
         bool _trackProgress = true;
         bool _setSceneActive;
         LoadSceneParameters _loadParameters = new(LoadSceneMode.Additive);
@@ -25,9 +25,9 @@ public struct SceneLoadParams
             _sceneName = sceneName;
         }
 
-        public Builder SetPrompt(string prompt = "")
+        public Builder SetTip(string tip = "")
         {
-            _prompt = prompt;
+            _loadingTip = tip;
             return this;
         }
 
@@ -60,7 +60,7 @@ public struct SceneLoadParams
             return new SceneLoadParams()
             {
                 SceneName = _sceneName,
-                Prompt = _prompt,
+                LoadingTip = _loadingTip,
                 IsAddressable = _isAddressable,
                 TrackProgress = _trackProgress,
                 SetSceneActive = _setSceneActive,
