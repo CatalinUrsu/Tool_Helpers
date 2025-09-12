@@ -24,10 +24,10 @@ public class SceneLoaderService : IServiceSceneLoader
 
     public async UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams)
     {
-            var sceneLoadResult = await GetSceneLoadResult(sceneLoadParams);
-
             if (!string.IsNullOrEmpty(sceneLoadParams.LoadingTip))
                 _serviceProgressTracking.UpdateLoadingTip(sceneLoadParams.LoadingTip);
+
+            var sceneLoadResult = await GetSceneLoadResult(sceneLoadParams);
 
             return sceneLoadResult;
     }
