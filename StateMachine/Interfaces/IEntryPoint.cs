@@ -5,7 +5,7 @@ namespace Helpers.StateMachine
 {
 public interface IEntryPoint
 {
-    UniTask Init(Action<float> onUpdateProgress = null);
+    UniTask Init(StatesMachine statesMachine, Action<float> onUpdateProgress = null);
     UniTask Enter();
     UniTask Exit();
 }

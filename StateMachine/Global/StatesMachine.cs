@@ -4,31 +4,18 @@ using System.Collections.Generic;
 
 namespace Helpers.StateMachine
 {
-[Serializable]
-public class StatesMachine
+public sealed class StatesMachine
 {
     readonly Dictionary<Type, IState> _states;
-    protected IState currentState { get; set; }
+    IState _currentState { get; set; }
 
     public StatesMachine(params IState[] states)
     {
         _states = new Dictionary<Type, IState>();
-        
+
         AddStates(states);
     }
-    
-    public virtual async UniTask Enter<TState>() where TState : class, IStateEnter
-    {
-        var state = await ChangeState<TState>();
-        await state.Enter();
-    }
 
-    public virtual async UniTask Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
-    {
-        var state = await ChangeState<TState>();
-        await state.Enter(payload);
-    }
-    
     public void AddStates(IState[] states)
     {
         foreach (var state in states)
@@ -41,16 +28,26 @@ public class StatesMachine
         }
     }
 
-    protected virtual async UniTask<TState> ChangeState<TState>() where TState : class, IState
+    public async UniTask Enter<TState>() where TState : class, IStateEnter
     {
-        if (currentState != null)
-            await currentState.Exit();
-
-        var state = GetState<TState>();
-        currentState = state;
-        return state;
+        var state = await ChangeState<TState>();
+        await state.Enter();
     }
 
-    protected virtual TState GetState<TState>() where TState : class, IState => _states[typeof(TState)] as TState;
+    public async UniTask Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
+    {
+        var state = await ChangeState<TState>();
+        await state.Enter(payload);
+    }
+
+    async UniTask<TState> ChangeState<TState>() where TState : class, IState
+    {
+        if (_currentState != null)
+            await _currentState.Exit();
+
+        var state = _states[typeof(TState)] as TState;
+        _currentState = state;
+        return state;
+    }
 }
 }
