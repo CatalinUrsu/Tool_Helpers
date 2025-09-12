@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
@@ -23,22 +22,14 @@ public class SceneLoaderService : IServiceSceneLoader
     public SceneLoaderService(IServiceProgressTracking serviceProgressTracking) => _serviceProgressTracking = serviceProgressTracking;
     
 
-    public async UniTask<SceneLoadResult[]> LoadScenes(params SceneLoadParams[] sceneLoadParams)
+    public async UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams)
     {
-        _serviceProgressTracking.LoadProgressCount = sceneLoadParams.Count(loadParams => loadParams.TrackProgress);
+            var sceneLoadResult = await GetSceneLoadResult(sceneLoadParams);
 
-        var scenesLoadTasks = sceneLoadParams.Select(GetSceneLoadTask).ToArray();
-        return await UniTask.WhenAll(scenesLoadTasks);
+            if (!string.IsNullOrEmpty(sceneLoadParams.LoadingTip))
+                _serviceProgressTracking.UpdateLoadingTip(sceneLoadParams.LoadingTip);
 
-        async UniTask<SceneLoadResult> GetSceneLoadTask(SceneLoadParams loadParams)
-            {
-                var sceneLoadResult = await GetSceneLoadResult(loadParams);
-
-                if (!string.IsNullOrEmpty(loadParams.LoadingTip))
-                    _serviceProgressTracking.UpdateLoadingTip(loadParams.LoadingTip);
-
-                return sceneLoadResult;
-            }
+            return sceneLoadResult;
     }
 
     public async UniTask UnloadScene(string sceneName)

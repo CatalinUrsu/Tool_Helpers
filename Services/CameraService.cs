@@ -6,7 +6,7 @@ namespace Helpers.Services
 {
 public class CameraService : IServiceCamera
 {
-    Camera _mainCamera;
+    protected Camera _mainCamera;
     readonly Dictionary<string, Camera> _cachedCameras = new();
 
     public virtual void RegisterMainCamera(Camera camera)
@@ -16,7 +16,7 @@ public class CameraService : IServiceCamera
         _mainCamera = camera;
     }
 
-    public virtual void RegisterCamera(string key, Camera camera, bool addToStack = true)
+    public virtual void RegisterCamera(string key, Camera camera, bool addToStack)
     {
         if (_cachedCameras.TryAdd(key, camera)) return;
             Debug.LogError($"[CamerasService] Camera with key '{key}' already exist");

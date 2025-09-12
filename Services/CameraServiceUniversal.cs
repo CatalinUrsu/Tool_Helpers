@@ -19,7 +19,7 @@ public class CameraServiceUniversal : CameraService
         _cameraData = camera.GetUniversalAdditionalCameraData();
     }
 
-    public override void RegisterCamera(string key, Camera camera, bool addToStack = true)
+    public override void RegisterCamera(string key, Camera camera, bool addToStack)
     {
         base.RegisterCamera(key, camera, addToStack);
 
@@ -31,7 +31,8 @@ public class CameraServiceUniversal : CameraService
     {
         base.UnregisterCamera(camera);
 
-        _cameraData.cameraStack.Remove(camera);
+        if (camera != _mainCamera)
+            _cameraData.cameraStack.Remove(camera);
     }
 #endif
 }

@@ -9,7 +9,7 @@ namespace Helpers.Services
 public interface IServiceSplashScreen
 {
     void RegisterSplashScreen(string key, ISplashScreen splashScreen);
-    public UniTask ShowPage(string key, bool skipAnimation);
+    public UniTask ShowPage(string key, bool skipAnimation = false);
     public UniTask HidePage();
 }
 }

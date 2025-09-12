@@ -18,7 +18,7 @@ public class SplashScreenService : IServiceSplashScreen
         Debug.LogError($"Splash screen with key '{key}' is already registered.");
     }
 
-    public async UniTask ShowPage(string key, bool skipAnimation = false)
+    public async UniTask ShowPage(string key, bool skipAnimation)
     {
         if (_splashScreens.TryGetValue(key, out var splashScreen))
         {

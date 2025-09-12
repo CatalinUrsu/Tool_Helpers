@@ -251,9 +251,9 @@ namespace StateMachine
 public class SplashScreenService : IServiceSplashScreen
 {
     ISplashScreen _splashScreen;
-    IServiceLoadingProgress _loadingProgressService;
+    IServiceProgressTracking _loadingProgressService;
 
-    public SplashScreenService(IServiceLoadingProgress loadingProgressService) => _loadingProgressService = loadingProgressService;
+    public SplashScreenService(IServiceProgressTracking loadingProgressService) => _loadingProgressService = loadingProgressService;
 
     public void RegisterSplashScreen(ISplashScreen panel) => _splashScreen = panel;
 

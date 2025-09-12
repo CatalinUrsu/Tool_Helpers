@@ -39,20 +39,25 @@ public class ProgressTrackingService : IServiceProgressTracking
     }
     
     public void RegisterLoadingProgress(SceneLoadProgress sceneLoadProgress) => _loadingProcesses.Add(sceneLoadProgress);
-
+    
     public void RegisterUnloadProcesses(params UniTask[] unloadingTasks)
     {
+        // Check if the provided unloading tasks are null or empty
         if (unloadingTasks == null || unloadingTasks.Length == 0)
         {
             Debug.LogWarning("No unloading tasks provided.");
             return;
         }
 
+        // Add each unloading task to the internal list
         foreach (var unloadTask in unloadingTasks)
             _unloadingTasks.Add(unloadTask);
 
+        // Mark that unloads are not finished and clear any existing disposables 
         UnloadsAreFinished = false;
         _disposable.Clear();
+
+        // Start observing progress updates at regular intervals until all unloads are finished
         Observable.Interval(_delayTimeSpan)
                   .TakeUntil(_ => UnloadsAreFinished)
                   .Subscribe(_ => UpdateProgress())
