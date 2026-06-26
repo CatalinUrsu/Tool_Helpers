@@ -21,7 +21,6 @@ public static class PackagesResolver
     static readonly string _manifestPath = "Packages/manifest.json";
     static readonly PackageInfo[] _packages = {
         new() { Name = "com.innogames.asset-relations-viewer", Url = "https://github.com/innogames/asset-relations-viewer.git" },
-        new() { Name = "com.dbrizov.naughtyattributes", Url = "https://github.com/dbrizov/NaughtyAttributes.git#upm" },
         new() { Name = "com.github-glitchenzo.nugetforunity", Url = "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity" },
         new() { Name = "com.svermeulen.extenject", Url = "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source" },
         new() { Name = "com.cysharp.unitask", Url = "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask" },
@@ -29,6 +28,8 @@ public static class PackagesResolver
     };
 
 #endregion
+
+#region Public methods
 
     static PackagesResolver()
     {
@@ -68,6 +69,10 @@ public static class PackagesResolver
 #endif
     }
 
+#endregion
+
+#region Private methods
+
     static bool GetManifest()
     {
         if (_manifest != null) return true;
@@ -96,5 +101,6 @@ public static class PackagesResolver
         return true;
     }
 
+#endregion
 }
 }
