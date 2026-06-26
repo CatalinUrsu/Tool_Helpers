@@ -72,7 +72,7 @@ public class ProjectInitializer : EditorWindow
             _window.Close();
     }
 
-    [MenuItem("Tools/Helpers/Initialize Project _F2", false, 0)]
+    [MenuItem("Tools/Helpers/Wizard/Setup Project #F2", false, 0)]
     public static void Init()
     {
         _window = (ProjectInitializer)EditorWindow.GetWindow(typeof(ProjectInitializer));

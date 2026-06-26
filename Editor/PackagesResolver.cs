@@ -37,7 +37,7 @@ public static class PackagesResolver
         AddNugetPackags();
     }
 
-    [MenuItem("Tools/Helpers/Resolver_Packages",false,1)]
+    [MenuItem("Tools/Helpers/Wizard/Resolver_Packages",false,1)]
     public static void AddExternalPackages()
     {
         if (!GetManifest() || !GetDependencies()) return;
@@ -55,7 +55,7 @@ public static class PackagesResolver
         AssetDatabase.Refresh();
     }
 
-    [MenuItem("Tools/Helpers/Resolver_Nuget",false,1)]
+    [MenuItem("Tools/Helpers/Wizard/Resolver_Nuget",false,1)]
     public static void AddNugetPackags()
     {
         DefineSymbolManager.AddDefineSymbol("NUGET_INSTALLED");
