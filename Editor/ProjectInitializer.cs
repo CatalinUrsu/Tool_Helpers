@@ -227,7 +227,7 @@ public class ProjectInitializer : EditorWindow
             if (!_updatePackages) return;
 
             PackagesResolver.AddExternalPackages();
-            PackagesResolver.AddNugetPackags();
+            PackagesResolver.AddNugetPackages();
         }
 
         void ImportLocalAssets()
