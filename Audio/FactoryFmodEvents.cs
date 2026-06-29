@@ -5,49 +5,15 @@ using FMOD.Studio;
 using UnityEngine;
 using Helpers.Audio;
 
-namespace Helpers.PoolSystem
+namespace Helpers.Audio
 {
 public class FactoryFmodEvents
 {
-    readonly TimeSpan _soundCheckinterval = TimeSpan.FromSeconds(.1);
-
-    Pool<EventInstance> GetPool(EventReference eventReference, bool enable3DAttributes = false, int preloadCount = 10, int maxCount = 10)
-    {
-        Pool<EventInstance> pool = null;
-
-        pool = new Pool<EventInstance>(OnCreateAction, OnGetAction, OnReleaseAction, OnDestroyAction, preloadCount, maxCount);
-        return pool;
-
-        EventInstance OnCreateAction(Action<EventInstance> returnToPoolAction)
-        {
-            var eventInstance = eventReference.GetInstance();
-            if (enable3DAttributes)
-                eventInstance.set3DAttributes(RuntimeUtils.To3DAttributes(Vector3.zero));
-
-            return eventInstance;
-        }
-
-        void OnGetAction(EventInstance eventInstance)
-        {
-            Observable.Interval(_soundCheckinterval)
-                      .TakeWhile(_ =>
-                      {
-                          eventInstance.getPlaybackState(out var state);
-                          return state != PLAYBACK_STATE.STOPPED;
-                      })
-                      .Subscribe(_ => { }, _ => pool.Release(eventInstance));
-        }
-
-        void OnReleaseAction(EventInstance eventInstance) => eventInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
-
-        void OnDestroyAction(EventInstance eventInstance) => eventInstance.ReleaseInstance();
-    }
-
     public class Builder
     {
         EventReference _eventReference;
         bool _enable3DAttributes;
-        int _preloadCount;
+        int _preloadCount = 10;
         int _maxCount = 10;
 
         public Builder(EventReference eventReference)
@@ -82,6 +48,40 @@ public class FactoryFmodEvents
 
             return pool;
         }
+    }
+    
+    readonly TimeSpan _soundCheckinterval = TimeSpan.FromSeconds(.1);
+
+    Pool<EventInstance> GetPool(EventReference eventReference, bool enable3DAttributes, int preloadCount, int maxCount)
+    {
+        Pool<EventInstance> pool = null;
+
+        pool = new Pool<EventInstance>(OnCreateAction, OnGetAction, OnReleaseAction, OnDestroyAction, preloadCount, maxCount);
+        return pool;
+
+        EventInstance OnCreateAction(Action<EventInstance> returnToPoolAction)
+        {
+            var eventInstance = eventReference.GetInstance();
+            if (enable3DAttributes)
+                eventInstance.set3DAttributes(RuntimeUtils.To3DAttributes(Vector3.zero));
+
+            return eventInstance;
+        }
+
+        void OnGetAction(EventInstance eventInstance)
+        {
+            Observable.Interval(_soundCheckinterval)
+                      .TakeWhile(_ =>
+                      {
+                          eventInstance.getPlaybackState(out var state);
+                          return state != PLAYBACK_STATE.STOPPED;
+                      })
+                      .Subscribe(_ => { }, _ => pool.Release(eventInstance));
+        }
+
+        void OnReleaseAction(EventInstance eventInstance) => eventInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+
+        void OnDestroyAction(EventInstance eventInstance) => eventInstance.ReleaseInstance();
     }
 }
 }

@@ -60,7 +60,7 @@ public class Pool<T>
         }
     }
 
-    public void ReleaseAll() => _active.ToArray().ForEach(item => Release(item));
+    public void ReleaseAll() => _active.ForEach(Release);
 
     public void Clear()
     {
