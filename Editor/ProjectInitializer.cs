@@ -3,6 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using Helpers.Editor.Bootstrap;
 using System.Collections.Generic;
 
 namespace Helpers.Editor
@@ -40,6 +41,8 @@ public class ProjectInitializer : EditorWindow
 
 
 #endregion
+
+#region Monobeh
 
     void OnEnable() => LoadPrefsSettings();
 
@@ -81,6 +84,10 @@ public class ProjectInitializer : EditorWindow
         LoadPrefsSettings();
         _window.Show();
     }
+    
+#endregion
+
+#region Private methods
 
     static void LoadPrefsSettings()
     {
@@ -227,7 +234,7 @@ public class ProjectInitializer : EditorWindow
             if (!_updatePackages) return;
 
             PackagesResolver.AddExternalPackages();
-            PackagesResolver.AddNugetPackages();
+            NugetPackagesResolver.AddNugetPackages();
         }
 
         void ImportLocalAssets()
@@ -250,5 +257,7 @@ public class ProjectInitializer : EditorWindow
             }
         }
     }
+
+#endregion
 }
 }

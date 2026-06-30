@@ -1,107 +1,48 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using System.Reflection;
-using UnityEditor.PackageManager;
 
-namespace Helpers.Editor
+namespace Helpers.Editor.Bootstrap
 {
-    [InitializeOnLoad]
-    public static class PackagesResolver
-    {
-#region Fields
-
-        const string MANIFEST_PATH = "Packages/manifest.json";
-        const string DEPENDENCIES_KEYWORD = "\"dependencies\": {";
-        
-        static readonly (string Name, string Url)[] _packages = {
-            ("com.innogames.asset-relations-viewer", "https://github.com/innogames/asset-relations-viewer.git"),
-            ("com.github-glitchenzo.nugetforunity", "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity"),
-            ("com.svermeulen.extenject", "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source"),
-            ("com.cysharp.unitask", "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"),
-            ("com.cysharp.r3", "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity")
-        };
-
-        static readonly string[] _packagesNuget = {
-            "R3",
-            "ObservableCollections"
-        };
-
-#endregion
-
+public static class NugetPackagesResolver
+{
+    static readonly string[] _packagesNuget = {
+        "R3",
+        "ObservableCollections"
+    };
+    
 #region Public methods
-
-        // Delay execution until the editor is fully initialized
-        static PackagesResolver() => EditorApplication.delayCall += ResolveAll;
-
-        [MenuItem("Tools/Helpers/Wizard/Resolve All Packages", false, 1)]
-        public static void ResolveAll()
-        {
-            var upmChanged = AddExternalPackages();
-            
-            // Install NuGet packages if no other packages added to manifest
-            if (upmChanged) return;
-            AddNugetPackages();
-        }
-
-        public static bool AddExternalPackages()
-        {
-            if (!File.Exists(MANIFEST_PATH))
-            {
-                Debug.LogError($"[GitPackagesResolver]: Error — file not found: {MANIFEST_PATH}");
-                return false;
-            }
-
-            var manifest = File.ReadAllText(MANIFEST_PATH);
-            var isModified = false;
-            var insertIndex = manifest.IndexOf(DEPENDENCIES_KEYWORD);
-            var insertions = "\n";
-
-            // Find the start of the dependencies block
-            if (insertIndex == -1) 
-            {
-                Debug.LogError("[GitPackagesResolver]: Invalid manifest.json format");
-                return false;
-            }
-            
-            insertIndex += DEPENDENCIES_KEYWORD.Length;
-
-            foreach (var pkg in _packages)
-            {
-                if (manifest.Contains($"\"{pkg.Name}\"")) continue;
-                
-                insertions += $"    \"{pkg.Name}\": \"{pkg.Url}\",\n";
-                isModified = true;
-                Debug.Log($"[GitPackagesResolver]: Added Git package: {pkg.Name}");
-            }
-
-            if (isModified)
-            {
-                manifest = manifest.Insert(insertIndex, insertions);
-                File.WriteAllText(MANIFEST_PATH, manifest);
-                Client.Resolve(); 
-                return true;
-            }
-
-            return false;
-        }
-
+    
         [MenuItem("Tools/Helpers/Wizard/Resolve Nuget", false, 1)]
         public static void AddNugetPackages()
         {
-            if (TryGetNugetAssemblies(out var installerType, out var identifierType))
+            if (TryGetNugetAssemblies(out var installerType, out var identifierType, out var installedPackagesManagerType))
             {
                 OpenRestartDialogue();
                 return;
             }
 
             var installMethod = installerType.GetMethod("InstallIdentifier", BindingFlags.Static | BindingFlags.Public);
-            if (installMethod == null) return;
-            
-            foreach (var packageName in _packagesNuget) 
+            var isInstalledMethod = installedPackagesManagerType.GetMethod("IsInstalled",
+                                                                           BindingFlags.Static | BindingFlags.NonPublic,
+                                                                           null,
+                                                                           new[] { typeof(string), typeof(bool) },
+                                                                           null);
+
+            if (installMethod == null || isInstalledMethod == null) return;
+
+            foreach (var packageName in _packagesNuget)
+            {
+                if ((bool)isInstalledMethod.Invoke(null, new object[] { packageName, true }))
+                {
+                    Debug.Log($"[NugetPackagesResolver]: NuGet package already installed: {packageName}");
+                    continue;
+                }
+
                 InstallNugetPackage(installMethod, identifierType, packageName);
+            }
         }
         
 #endregion
@@ -112,7 +53,7 @@ namespace Helpers.Editor
         /// Use reflection so the script compiles even if NuGetForUnity is not installed yet
         /// </summary>
         /// <returns></returns>
-        static bool TryGetNugetAssemblies(out Type installerType, out Type identifierType)
+        static bool TryGetNugetAssemblies(out Type installerType, out Type identifierType, out Type installedPackagesManagerType)
         {
             installerType = AppDomain.CurrentDomain.GetAssemblies()
                                      .Select(assembly => assembly.GetType("NugetForUnity.NugetPackageInstaller"))
@@ -122,7 +63,11 @@ namespace Helpers.Editor
                                       .Select(assembly => assembly.GetType("NugetForUnity.Models.NugetPackageIdentifier"))
                                       .FirstOrDefault(type => type != null);
 
-            return installerType == null || identifierType == null;
+            installedPackagesManagerType = AppDomain.CurrentDomain.GetAssemblies()
+                                                    .Select(assembly => assembly.GetType("NugetForUnity.InstalledPackagesManager"))
+                                                    .FirstOrDefault(type => type != null);
+
+            return installerType == null || identifierType == null || installedPackagesManagerType == null;
         }
 
         static void OpenRestartDialogue()
@@ -185,5 +130,5 @@ namespace Helpers.Editor
         }
 
 #endregion
-    }
+}
 }
