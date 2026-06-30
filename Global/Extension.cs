@@ -69,9 +69,6 @@ public static class Extension
     /// <summary>
     ///  Get Object or null (can be used for null-propagation / null-coalescing operations)
     /// </summary>
-    /// <param name="obj"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
     public static T OrNull<T>(this T obj) where T : Object => obj ? obj : null;
 
     /// <summary>
@@ -126,7 +123,7 @@ public static class Extension
     public static Vector3 RoundDigits(this Vector3 vector, int digitsCount)
     {
         int num = (int)Mathf.Pow(10, digitsCount);
-        return new Vector4(Mathf.Round(vector.x * num) / num, Mathf.Round(vector.y * num) / num, Mathf.Round(vector.z * num) / num);
+        return new Vector3(Mathf.Round(vector.x * num) / num, Mathf.Round(vector.y * num) / num, Mathf.Round(vector.z * num) / num);
     }
 
     /// <summary>

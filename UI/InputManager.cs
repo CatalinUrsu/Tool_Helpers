@@ -56,7 +56,7 @@ public class InputManager : Singleton<InputManager>
         if (_results.Count == 0)
             return false;
 
-        return (_results[0].gameObject != targetGO);
+        return _results[0].gameObject != targetGO;
     }
 
 
@@ -66,12 +66,11 @@ public class InputManager : Singleton<InputManager>
 
     class ReleaseWrapper : IDisposable
     {
-        InputManager _inputManager;
+        readonly InputManager _inputManager;
 
         public ReleaseWrapper(InputManager inputManager)
         {
             _inputManager = inputManager;
-
             _inputManager.InputEnable = false;
         }
 
