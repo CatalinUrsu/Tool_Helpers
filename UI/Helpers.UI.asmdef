@@ -6,7 +6,7 @@
         "R3.Unity",
         "Unity.TextMeshPro",
         "Unity.Localization",
-        "NaughtyAttributes.Core",
+        "EditorAttributes",
         "DOTween.Modules"
     ],
     "includePlatforms": [],

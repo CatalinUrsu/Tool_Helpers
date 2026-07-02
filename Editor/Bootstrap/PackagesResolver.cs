@@ -14,6 +14,7 @@ namespace Helpers.Editor.Bootstrap
         const string DEPENDENCIES_KEYWORD = "\"dependencies\": {";
         
         static readonly (string Name, string Url)[] _packages = {
+            ("com.v0lt.editor-attributes", "https://github.com/v0lt13/EditorAttributes.git"),
             ("com.innogames.asset-relations-viewer", "https://github.com/innogames/asset-relations-viewer.git"),
             ("com.github-glitchenzo.nugetforunity", "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity"),
             ("com.svermeulen.extenject", "https://github.com/Mathijs-Bakker/Extenject.git?path=UnityProject/Assets/Plugins/Zenject/Source"),
