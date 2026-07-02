@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 namespace Helpers.UI
 {
-[AddComponentMenu("UI/Helpers/Button Helper")]
+[AddComponentMenu("UI (Canvas)/Helpers/Button Helper")]
 public class ButtonHelper : Button
 {
     public event Action OnTouchDown;

@@ -1,5 +1,6 @@
 ﻿using TMPro;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
@@ -54,14 +55,14 @@ public class UIMenuItems
 
 #region UI Commands
 
-    [MenuItem("GameObject/UI/Helpers/DummyImage", false)]
+    [MenuItem("GameObject/UI (Canvas)/Helpers/DummyImage", false)]
     public static void CreateDummyImage(MenuCommand menuCommand)
     {
         var go = CreateUIElementRoot("Img", _squareSize, typeof(DummyImage));
         PlaceUIElement(go.gameObject, menuCommand);
     }
 
-    [MenuItem("GameObject/UI/Helpers/Button", false)]
+    [MenuItem("GameObject/UI (Canvas)/Helpers/Button", false)]
     public static void CreateButton(MenuCommand menuCommand)
     {
         var btnGO = CreateUIElementRoot("Btn", _buttonSize, typeof(Image), typeof(ButtonHelper));
@@ -86,10 +87,10 @@ public class UIMenuItems
         }
     }
 
-    [MenuItem("GameObject/UI/Helpers/Dropdown", false)]
+    [MenuItem("GameObject/UI (Canvas)/Helpers/Dropdown", false)]
     public static void CreateDropDown(MenuCommand menuCommand)
     {
-        var dropdownGO = CreateUIElementRoot("Dropdown", _dropdownSize, typeof(Image), typeof(DropdownHelper));
+        var dropdownGO = CreateUIElementRoot("Dropdown", _dropdownSize, typeof(Image), typeof(Selectable),typeof(DropdownHelper));
         var captions = GetDropdownCaptions();
         var panel = GetDropdownPanel();
         var itemParent = panel.transform.GetChild(0).GetChild(0);
@@ -98,9 +99,9 @@ public class UIMenuItems
         SetDropdownFields();
         PlaceUIElement(dropdownGO, menuCommand);
 
-        DropdownCaption GetDropdownCaptions()
+        DropdownInfoCaption GetDropdownCaptions()
         {
-            var caption = CreateUIElementRoot("Captions", _dropdownSize, typeof(DropdownCaption)).GetComponent<DropdownCaption>();
+            var caption = CreateUIElementRoot("Captions", _dropdownSize, typeof(DropdownInfoCaption)).GetComponent<DropdownInfoCaption>();
             var txtGO = CreateUIElementRoot("Txt", _dropdownSize, typeof(TextMeshProUGUI));
             var imgArrow = CreateUIElementRoot("Img_Arrow", _dropdownArrowSize, typeof(Image));
 
@@ -192,7 +193,6 @@ public class UIMenuItems
             {
                 var scrollRectRT = panelGO.GetComponent<RectTransform>();
                 var scrollRect = panelGO.GetComponent<ScrollRect>();
-                var scrollRectImage = panelGO.GetComponent<Image>();
                 var scrollRectCanvas = panelGO.GetComponent<Canvas>();
 
                 scrollRectRT.anchorMin = Vector2.zero;
@@ -213,14 +213,13 @@ public class UIMenuItems
                 scrollRectCanvas.sortingOrder = 10;
                 scrollRectCanvas.additionalShaderChannels = AdditionalCanvasShaderChannels.None;
                 
-                scrollRectImage.raycastTarget = false;
                 SetImage(panelGO, _uiResources.background, Color.white, Image.Type.Sliced);
             }
         }
 
-        DropdownItem GetDropdownItemTemplate()
+        DropdownInfoItem GetDropdownItemTemplate()
         {
-            var item = CreateUIElementRoot("Item", _dropdownSize, typeof(Toggle), typeof(DropdownItem)).GetComponent<DropdownItem>();
+            var item = CreateUIElementRoot("Item", _dropdownSize, typeof(Toggle), typeof(DropdownInfoItem)).GetComponent<DropdownInfoItem>();
             var imgBg = CreateUIElementRoot("Img_Bg", _dropdownSize, typeof(Image));
             var txtGO = CreateUIElementRoot("Txt", _dropdownSize, typeof(TextMeshProUGUI));
             var imgCheckmark = CreateUIElementRoot("Img_Checkmark", _dropdownArrowSize, typeof(Image));
@@ -352,18 +351,8 @@ public class UIMenuItems
     static GameObject GetOrAddCanvasGO()
     {
         var selectedGo = Selection.activeGameObject;
-        var canvasGo = (selectedGo != null) ? selectedGo.GetComponentInParent<Canvas>() : null;
-        if (IsValidCanvas(canvasGo))
-            return canvasGo.gameObject;
-
-        // If no cnavas in selection or its parents, find all loaded Canvases, not just the ones in main scenes.
-        var canvasArray = StageUtility.GetCurrentStageHandle().FindComponentsOfType<Canvas>();
-        for (int i = 0; i < canvasArray.Length; i++)
-            if (IsValidCanvas(canvasArray[i]))
-                return canvasArray[i].gameObject;
-
-        //If no canvases anywhere, create one
-        return GetNewCanvasGO();
+        var canvasGo = selectedGo != null ? selectedGo.GetComponentInParent<Canvas>() : null;
+        return IsValidCanvas(canvasGo) ? canvasGo.gameObject : GetNewCanvasGO();
 
         bool IsValidCanvas(Canvas canvas)
         {
@@ -374,12 +363,17 @@ public class UIMenuItems
 
             return StageUtility.GetStageHandle(canvas.gameObject) == StageUtility.GetCurrentStageHandle();
         }
-        
+
         GameObject GetNewCanvasGO()
         {
             var root = ObjectFactory.CreateGameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvasScaler = root.GetComponent<CanvasScaler>();
             root.layer = LayerMask.NameToLayer(UI_LAYER_NAME);
             root.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1920, 1080);
+            canvasScaler.matchWidthOrHeight = .5f;
 
             // Works for all stages.
             StageUtility.PlaceGameObjectInCurrentStage(root);
