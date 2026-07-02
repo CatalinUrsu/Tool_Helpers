@@ -15,9 +15,7 @@ public class DropdownOption
     public string Txt => _useLocalizedText ? _localizedTxt.GetLocalizedString() : _usualTxt;
     public Sprite Sprite => _sprite;
     public bool IsOn { get; private set; }
-    public Guid GUID { get; private set; }
-    
-    public DropdownOption() => GUID = Guid.NewGuid();
+    public Guid GUID { get; private set; } = Guid.NewGuid();
 
 #endregion
 

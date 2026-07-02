@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 #if DOTWEEN
@@ -12,7 +13,8 @@ public class DropdownPanel : MonoBehaviour
 {
 #region Fields
 
-    NavigationScroll _navigationScroll;
+    [SerializeField] NavigationScroll _navigationScroll;
+    
     CanvasGroup _canvasGroup;
     CanvasGroup _cg;
     RectTransform _rt;
@@ -26,10 +28,14 @@ public class DropdownPanel : MonoBehaviour
 
 #region Monobeh
 
+    void OnValidate()
+    {
+        _navigationScroll ??= GetComponent<NavigationScroll>();
+    }
+
     [ExecuteAlways]
     void Awake()
     {
-        _navigationScroll = GetComponent<NavigationScroll>();
         _canvasGroup = GetComponent<CanvasGroup>();
         _rt = GetComponent<RectTransform>();
         _sizeDelta = _rt.sizeDelta;
@@ -53,6 +59,8 @@ public class DropdownPanel : MonoBehaviour
     }
 
     public void AddSelectable(params Selectable[] selectables) => _navigationScroll.AddSelectable(selectables);
+    
+    public void RemoveSelectable(params Selectable[] selectables) => _navigationScroll.RemoveSelectables(selectables);
 
     public void Show(EDropdownAnimation anim, float duration)
     {

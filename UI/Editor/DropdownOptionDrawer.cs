@@ -6,13 +6,24 @@ namespace UI.Editor
 [CustomPropertyDrawer(typeof(DropdownOption))]
 public class DropdownOptionDrawer : PropertyDrawer
 {
+#region Fields
+
+    readonly Color _bgColor = new(0.2f, 0.2f, 0.2f, 1f);
+    Rect _backgroundRect;
+
+#endregion
+    
 #region Monobeh
 
-    public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => EditorGUIUtility.singleLineHeight * 5;
+    public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => EditorGUIUtility.singleLineHeight * 4;
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
         EditorGUI.BeginProperty(position, label, property);
+        _backgroundRect = position;
+        _backgroundRect.height = GetPropertyHeight(property, label);
+        EditorGUI.DrawRect(_backgroundRect, _bgColor);
+        
         position = EditorGUI.PrefixLabel(position, label);
         position.height = EditorGUIUtility.singleLineHeight;
         position.width += EditorGUIUtility.labelWidth;

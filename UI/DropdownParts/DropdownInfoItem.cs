@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 
 namespace Helpers.UI
 {
-public class DropdownItem : DropdownElementBase, ICancelHandler
+public class DropdownInfoItem : DropdownInfoBase, ICancelHandler
 {
 #region Fields
 

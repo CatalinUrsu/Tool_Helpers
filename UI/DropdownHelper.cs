@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using NaughtyAttributes;
+using EditorAttributes;
 using ObservableCollections;
 using UnityEngine.Assertions;
 using UnityEngine.EventSystems;
@@ -13,44 +13,80 @@ using UnityEngine.Localization.Settings;
 
 namespace Helpers.UI
 {
-[RequireComponent(typeof(RectTransform))]
-[AddComponentMenu("UI/Helpers/Dropdown Helper")]
-public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, ICancelHandler
+[RequireComponent(typeof(RectTransform), typeof(Selectable))]
+[AddComponentMenu("UI (Canvas)/Helpers/Dropdown Helper")]
+public class DropdownHelper : MonoBehaviour, IPointerClickHandler, ISubmitHandler, ICancelHandler, IDeselectHandler
 {
 #region Fields
 
-    [HorizontalLine(color: EColor.Red)]
-    [field: SerializeField] public DropdownCaption Caption;
-    [field: SerializeField] public DropdownPanel Panel;
-    [field: SerializeField] public DropdownItem ItemTemplate;
-    [field: SerializeField] public Transform ItemParent;
+    [SerializeField, VerticalGroup("BaseElements", true,
+                                   nameof(_selectable),
+                                   nameof(Caption),
+                                   nameof(Panel),
+                                   nameof(ItemTemplate),
+                                   nameof(ItemParent),
+                                   nameof(AnimationType),
+                                   nameof(PanelAnimSpeed))]
+    EditorAttributes.Void _groupBaseElements;
+    [field: SerializeField, HideInInspector, Required] public Selectable _selectable;
+    [field: SerializeField, HideInInspector, Required] public DropdownInfoCaption Caption;
+    [field: SerializeField, HideInInspector, Required] public DropdownPanel Panel;
+    [field: SerializeField, HideInInspector, Required] public DropdownInfoItem ItemTemplate;
+    [field: SerializeField, HideInInspector, Required] public Transform ItemParent;
 
-    [field: SerializeField] public EDropdownAnimation AnimationType;
-    [field: SerializeField] public float PanelAnimSpeed = 0.25f;
+    [Header("Animation")]
+    [field: SerializeField, HideInInspector, OnValueChanged(nameof(OnChangeAnimationType))] public EDropdownAnimation AnimationType;
+    [field: SerializeField, HideInInspector, ShowField(nameof(_useAnimation))] public float PanelAnimSpeed = 0.25f;
+    
+    [Space(10)]
+    [SerializeField, VerticalGroup(true, nameof(Options))] EditorAttributes.Void _groupOptions;
+    [HideInInspector] public List<DropdownOption> Options = new();
 
-    [field: SerializeField] public bool MultiSelect;
-    [field: SerializeField] public bool AddNoneItem;
-    [field: SerializeField] public bool AddEverythingItem;
-    [field: SerializeField] public DropdownOption NothingOption;
-    [field: SerializeField] public DropdownOption MixedOption;
-    [field: SerializeField] public DropdownOption EverythingOption;
-    [field: SerializeField] public List<DropdownOption> Options = new List<DropdownOption>();
+    [Space(10)]
+    [SerializeField, VerticalGroup("MultiSelect", true,
+                                   nameof(MultiSelect),
+                                   nameof(MixedOption),
+                                   nameof(EnableNoneItem),
+                                   nameof(NothingOption),
+                                   nameof(EnableEverythingItem),
+                                   nameof(EverythingOption))]
+    EditorAttributes.Void _groupMultiSelect;
+    [field: SerializeField, HideInInspector] public bool MultiSelect;
+    [field: SerializeField, HideInInspector, ShowField(nameof(MultiSelect))] public DropdownOption MixedOption;
+    
+    [Space]
+    [field: SerializeField, HideInInspector] public bool EnableNoneItem;
+    [field: SerializeField, HideInInspector, ShowField(nameof(EnableNoneItem))] public DropdownOption NothingOption;
+    
+    [Space]
+    [field: SerializeField, HideInInspector] public bool EnableEverythingItem;
+    [field: SerializeField, HideInInspector, ShowField(nameof(EnableEverythingItem))] public DropdownOption EverythingOption;
 
     public event Action<int> OnSelectItem;
     public event Action<int, bool> OnMultipleSelectItem;
-    public ObservableList<DropdownOption> ObservableOptions = new ObservableList<DropdownOption>();
+    public ObservableList<DropdownOption> ObservableOptions = new();
 
     bool _isDropdownShown;
-    DropdownItem _noneItem;
-    DropdownItem _everythingItem;
-    DropdownItem _previousSelectedItem;
-    List<DropdownItem> _items = new List<DropdownItem>();
+    bool _useAnimation;
+    DropdownInfoItem _noneItem;
+    DropdownInfoItem _everythingItem;
+    DropdownInfoItem _selectedItem;
+    DropdownOption _originalMixedOption;
+    DropdownOption _originalNoneOption;
+    DropdownOption _originalEverythingOption;
+    readonly List<DropdownInfoItem> _items = new();
 
 #endregion
 
 #region Monobeh
 
-    protected override void Awake()
+    void OnValidate()
+    {
+        _selectable ??= gameObject.GetComponent<Selectable>();
+        OnChangeAnimationType();
+    }
+
+    protected void Awake()
     {
 #if UNITY_EDITOR
         if (!Application.isPlaying)
@@ -65,49 +101,27 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
         ObservableOptions.CollectionChanged += ItemsCollectionChanged_handler;
         Panel.Init();
         ItemTemplate.gameObject.SetActive(false);
-        AddMultiSelectExtraItems();
+
+        AddEventsListeners();
+        SetMixedOption(MultiSelect);
+        SetNoneOption(EnableNoneItem);
+        SetEverythingOption(EnableEverythingItem);
         AddOptions(Options);
     }
 
-    protected override void OnEnable()
+    protected void OnEnable()
     {
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-            return;
-#endif
-
-        base.OnEnable();
-        InitEventsHandlers();
-
-        void InitEventsHandlers()
-        {
-            OnSelectItem += OnSelectedItem_handler;
-            OnMultipleSelectItem += OnMultipleSelectItem_handler;
-            LocalizationSettings.SelectedLocaleChanged += OnChangeLanguage_handler;
-        }
+        RemoveEventsListeners(); // Just to prevent listener duplicate
+        AddEventsListeners();
     }
 
-    protected override void OnDisable()
+    protected void OnDisable()
     {
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-            return;
-#endif
-
-        base.OnDisable();
-
         Hide(true);
-        OnSelectItem -= OnSelectedItem_handler;
-        OnMultipleSelectItem -= OnMultipleSelectItem_handler;
-        LocalizationSettings.SelectedLocaleChanged -= OnChangeLanguage_handler;
+        RemoveEventsListeners();
     }
 
-    protected override void OnDestroy()
-    {
-        base.OnDestroy();
-
-        ObservableOptions.CollectionChanged -= ItemsCollectionChanged_handler;
-    }
+    protected void OnDestroy() => ObservableOptions.CollectionChanged -= ItemsCollectionChanged_handler;
 
     /// <summary>
     /// Mouse Pointer click 
@@ -123,13 +137,10 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
     /// Check if dropdown is deselected using navigation and use AxisEventData to hide if don't Navigate down (to items)
     /// </summary>
     /// <param name="eventData"></param>
-    public override void OnDeselect(BaseEventData eventData)
+    public void OnDeselect(BaseEventData eventData)
     {
-        base.OnDeselect(eventData);
-
-        if (eventData is AxisEventData axisEventData)
-            if (!(axisEventData.moveVector.y < 0))
-                Hide();
+        if (eventData is AxisEventData { moveVector: { y: >= 0 } })
+            Hide();
     }
 
     /// <summary>
@@ -157,31 +168,35 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
     /// </summary>
     public void ClearOptions() => ObservableOptions.Clear();
 
-    /// <summary>
-    /// Add items None and Everything for MultipleSelect if it's needed
-    /// </summary>
-    public void AddMultiSelectExtraItems()
+    void SetMixedOption(bool enableMixedOption, DropdownOption option = null)
     {
-        if (!MultiSelect) return;
+        MultiSelect = enableMixedOption;
 
-        if (this.AddNoneItem)
+        if (MultiSelect)
+            MixedOption = option ?? MixedOption;
+    }
+
+    void SetNoneOption(bool enableNoneOption, DropdownOption option = null)
+    {
+        EnableNoneItem = enableNoneOption;
+
+        if (EnableNoneItem)
             AddNoneItem();
-
-        if (this.AddEverythingItem)
-            AddEverythingItem();
+        else
+            RemoveNoneItem();
+        return;
 
         void AddNoneItem()
         {
             _noneItem = Instantiate(ItemTemplate, ItemParent);
-
             _noneItem.gameObject.name = "None";
-            _noneItem.Init(this, NothingOption);
+            _noneItem.Init(this, option ?? NothingOption);
             _noneItem.Toggle.SetIsOnWithoutNotify(true);
             _noneItem.Toggle.onValueChanged.AddListener(OnValueChange_handler);
 
             var toggleNavigation = _noneItem.Toggle.navigation;
             toggleNavigation.mode = Navigation.Mode.Explicit;
-            toggleNavigation.selectOnUp = this;
+            toggleNavigation.selectOnUp = _selectable;
             _noneItem.Toggle.navigation = toggleNavigation;
 
             Panel.AddSelectable(_noneItem.Toggle);
@@ -195,12 +210,30 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             }
         }
 
+        void RemoveNoneItem()
+        {
+            if (!_noneItem) return;
+
+            Panel.RemoveSelectable(_noneItem.Toggle);
+            Destroy(_noneItem);
+        }
+    }
+
+    void SetEverythingOption(bool enableEverythingOption, DropdownOption option = null)
+    {
+        EnableEverythingItem = enableEverythingOption;
+
+        if (EnableEverythingItem)
+            AddEverythingItem();
+        else
+            RemoveEverythingItem();
+        return;
+
         void AddEverythingItem()
         {
             _everythingItem = Instantiate(ItemTemplate, ItemParent);
-
             _everythingItem.gameObject.name = "Everything";
-            _everythingItem.Init(this, EverythingOption);
+            _everythingItem.Init(this, option ?? EverythingOption);
             _everythingItem.Toggle.SetIsOnWithoutNotify(false);
             _everythingItem.Toggle.onValueChanged.AddListener(OnValueChange_handler);
 
@@ -216,15 +249,26 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
                     ToggleAllItems(true);
                 else
                 {
-                    if (this.AddNoneItem)
+                    if (EnableNoneItem)
                         _noneItem.Toggle.isOn = true;
                     else if (_items.Count > 0)
                         ToggleItem(0, true);
                 }
             }
         }
+
+        void RemoveEverythingItem()
+        {
+            if (!_everythingItem) return;
+
+            Panel.RemoveSelectable(_everythingItem.Toggle);
+            Destroy(_everythingItem);
+        }
     }
 
+    /// <summary>
+    /// Toggles the selection state of a dropdown item at the specified index.
+    /// </summary>
     public void ToggleItem(int index, bool value)
     {
         if (index < 0 || index >= ObservableOptions.Count)
@@ -244,12 +288,10 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             var item = _items[idx];
             if (item.Toggle.isOn != value)
             {
-                OnMultipleSelectItem?.Invoke(idx, value);
                 item.Toggle.SetIsOnWithoutNotify(value);
+                OnMultipleSelectItem?.Invoke(idx, value);
             }
         }
-
-        SetNoneAndEverythingItems();
     }
 
     public void Show(bool instantly = false)
@@ -278,9 +320,25 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 
 #region Private methods
 
+    void OnChangeAnimationType() => _useAnimation = AnimationType is EDropdownAnimation.Fade or EDropdownAnimation.Resize;
+
+    void AddEventsListeners()
+    {
+        OnSelectItem += OnSelectedItem_handler;
+        OnMultipleSelectItem += OnMultipleSelectItem_handler;
+        LocalizationSettings.SelectedLocaleChanged += OnChangeLanguage_handler;
+    }
+
+    void RemoveEventsListeners()
+    {
+        OnSelectItem -= OnSelectedItem_handler;
+        OnMultipleSelectItem -= OnMultipleSelectItem_handler;
+        LocalizationSettings.SelectedLocaleChanged -= OnChangeLanguage_handler;
+    }
+
     void CreateItem(DropdownOption optionData)
     {
-        DropdownItem item = Instantiate(ItemTemplate, ItemParent);
+        var item = Instantiate(ItemTemplate, ItemParent);
 
         item.Init(this, optionData);
         item.Toggle.SetIsOnWithoutNotify(optionData.IsOn);
@@ -299,6 +357,8 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
         var itemToDestroy = _items.First(dropdownItem => dropdownItem.GUID.Equals(optionData.GUID));
 
         if (itemToDestroy == null) return;
+
+        Panel.RemoveSelectable(itemToDestroy.Toggle);
         _items.Remove(itemToDestroy);
 
         Destroy(itemToDestroy);
@@ -307,7 +367,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
     void ShowHidePanel(BaseEventData eventData)
     {
         //Check if was clicked TargetGraphic, to prevent action when click on child Selectable
-        if (eventData.selectedObject != targetGraphic.gameObject) return;
+        if (eventData.selectedObject != _selectable.gameObject) return;
 
         if (_isDropdownShown)
             Hide();
@@ -317,7 +377,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 
     void RefreshCaption()
     {
-        DropdownOption data = NothingOption;
+        var data = new DropdownOption();
 
         if (ObservableOptions.Count > 0)
         {
@@ -335,15 +395,27 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
                        };
             }
             else
-                data = _previousSelectedItem ? ObservableOptions.First(option => option.GUID.Equals(_previousSelectedItem.GUID)) : data;
+            {
+                var selectedItem = _items.FirstOrDefault(item => item.Toggle.isOn);
+
+                // If None item selected and don't exist "NoneItem", select first item as default
+                if (!selectedItem)
+                {
+                    ToggleItem(0, true);
+                    return;
+                }
+
+                data = ObservableOptions.First(option => option.GUID.Equals(_selectedItem.GUID));
+            }
         }
 
         Caption.UpdateContent(data);
+        SetNoneAndEverythingItems();
     }
 
     void SetNoneAndEverythingItems()
     {
-        var selectedItemsCount = _items.Where(item => item.Toggle.isOn).ToArray().Length;
+        var selectedItemsCount = _items.Count(item => item.Toggle.isOn);
 
         ToggleNoneItem(selectedItemsCount == 0);
         ToggleEverythingItem(selectedItemsCount == _items.Count);
@@ -357,23 +429,24 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
 
     void ToggleEverythingItem(bool value)
     {
-        if (!AddEverythingItem) return;
+        if (!EnableEverythingItem) return;
         _everythingItem.Toggle.SetIsOnWithoutNotify(value);
     }
 
-    void SetItemsOrderAndNavigatino()
+    void SetItemsOrderAndNavigation()
     {
         SetOrderForExtraItems();
         SetItemsNavigation();
+        return;
 
         void SetOrderForExtraItems()
         {
             var lastChildIdx = ItemParent.childCount - 1;
 
-            if (_noneItem && _noneItem.transform.GetSiblingIndex() != 0)
+            if (_noneItem)
                 _noneItem.transform.SetSiblingIndex(0);
 
-            if (_everythingItem && _everythingItem.transform.GetSiblingIndex() != lastChildIdx)
+            if (_everythingItem)
                 _everythingItem.transform.SetSiblingIndex(lastChildIdx);
         }
 
@@ -389,7 +462,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             if (_everythingItem)
             {
                 var toggleNavigation = _everythingItem.Toggle.navigation;
-                toggleNavigation.selectOnUp = _items.Count > 0 ? _items[_items.Count - 1].Toggle : _noneItem ? _noneItem.Toggle : this;
+                toggleNavigation.selectOnUp = _items.Count > 0 ? _items[^1].Toggle : _noneItem ? _noneItem.Toggle : _selectable;
                 _everythingItem.Toggle.navigation = toggleNavigation;
             }
 
@@ -397,7 +470,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             {
                 var item = _items[i];
                 var toggleNavigation = item.Toggle.navigation;
-                toggleNavigation.selectOnUp = (i - 1) >= 0 ? _items[i - 1].Toggle : _noneItem ? _noneItem.Toggle : this;
+                toggleNavigation.selectOnUp = (i - 1) >= 0 ? _items[i - 1].Toggle : _noneItem ? _noneItem.Toggle : _selectable;
                 toggleNavigation.selectOnDown = (i + 1) < _items.Count ? _items[i + 1].Toggle : _everythingItem ? _everythingItem.Toggle : null;
                 item.Toggle.navigation = toggleNavigation;
             }
@@ -419,30 +492,27 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
             EventSystem.current.SetSelectedGameObject(gameObject);
     }
 
-    void OnToggleItem_handler(DropdownItem selectedItem, bool isOn)
+    void OnToggleItem_handler(DropdownInfoItem selectedItem, bool isOn)
     {
         if (MultiSelect)
         {
             var idx = _items.IndexOf(selectedItem);
             OnMultipleSelectItem?.Invoke(idx, isOn);
-            SetNoneAndEverythingItems();
         }
         else
         {
-            var sameItem = _previousSelectedItem ? _previousSelectedItem.GUID.Equals(selectedItem.GUID) : false;
+            var sameItem = _selectedItem && _selectedItem.GUID.Equals(selectedItem.GUID);
 
             if (isOn)
             {
-                if (_previousSelectedItem && !sameItem)
-                    _previousSelectedItem.Toggle.SetIsOnWithoutNotify(false);
+                if (_selectedItem && !sameItem)
+                    _selectedItem.Toggle.SetIsOnWithoutNotify(false);
 
-                _previousSelectedItem = selectedItem;
+                _selectedItem = selectedItem;
                 OnSelectItem?.Invoke(_items.IndexOf(selectedItem));
             }
             else if (sameItem)
-            {
                 selectedItem.Toggle.SetIsOnWithoutNotify(true);
-            }
 
             Hide();
         }
@@ -480,7 +550,7 @@ public class DropdownHelper : Selectable, IPointerClickHandler, ISubmitHandler, 
                 break;
         }
 
-        SetItemsOrderAndNavigatino();
+        SetItemsOrderAndNavigation();
         RefreshCaption();
     }
 
