@@ -4,7 +4,7 @@ namespace Helpers.StateMachine
 {
 public interface IState
 {
-    StatesMachine StatesMachine { get; set; }
+    StateMachine StateMachine { get; set; }
     UniTask Exit();
 }
 }

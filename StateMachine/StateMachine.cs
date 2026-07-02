@@ -4,12 +4,14 @@ using System.Collections.Generic;
 
 namespace Helpers.StateMachine
 {
-public sealed class StatesMachine
+public sealed class StateMachine
 {
+    public string StateName => _currentState.GetType().Name;
+    
     readonly Dictionary<Type, IState> _states;
     IState _currentState { get; set; }
 
-    public StatesMachine(params IState[] states)
+    public StateMachine(params IState[] states)
     {
         _states = new Dictionary<Type, IState>();
 
@@ -23,7 +25,7 @@ public sealed class StatesMachine
             if (_states.ContainsKey(state.GetType()))
                 continue;
 
-            state.StatesMachine = this;
+            state.StateMachine = this;
             _states.Add(state.GetType(), state);
         }
     }
