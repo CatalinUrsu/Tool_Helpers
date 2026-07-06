@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace Helpers.PoolSystem
@@ -11,7 +12,7 @@ public class Pool<T>
     readonly Action<T> _onDestroy;
     readonly int _maxSize;
     protected readonly Queue<T> _pool = new();
-    protected readonly List<T> _active = new();
+    protected readonly HashSet<T> _active = new();
 
     /// <summary>
     /// Assign values to pool data and preload several amount of items if is neded
@@ -48,7 +49,8 @@ public class Pool<T>
 
     public virtual void Release(T item)
     {
-        if (_pool.Contains(item)) return;
+        if (!_active.Remove(item))
+            return;
 
         if (_pool.Count >= _maxSize)
             _onDestroy?.Invoke(item);
@@ -56,16 +58,19 @@ public class Pool<T>
         {
             _onRelease?.Invoke(item);
             _pool.Enqueue(item);
-            _active.Remove(item);
         }
     }
 
-    public void ReleaseAll() => _active.ForEach(Release);
+    public void ReleaseAll()
+    {
+        foreach (var item in _active.ToArray())
+            Release(item);
+    }
 
     public void Clear()
     {
         ReleaseAll();
-        _pool.ForEach(item => _onDestroy(item));
+        _pool.ForEach(item => _onDestroy?.Invoke(item));
 
         _active.Clear();
         _pool.Clear();
