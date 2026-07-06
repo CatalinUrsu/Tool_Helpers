@@ -1,5 +1,4 @@
-﻿using FMOD.Studio;
-using UnityEngine;
+﻿using UnityEngine;
 using Cysharp.Threading.Tasks;
 using UnityEngine.AddressableAssets;
 
@@ -9,18 +8,10 @@ public class BankLoader : MonoBehaviour
 {
     [SerializeField] AssetReference _fmodAssetRef;
     
-    Bank _bank;
-    TextAsset _bankTextAsset;
+    BankData _bankData;
 
-    public async UniTask Init()
-    {
-        _bankTextAsset = await _fmodAssetRef.LoadTextAsset();
-        _bank = _bankTextAsset.LoadBank();
-    }
+    public async UniTask Init() => _bankData = await Addressables.LoadAssetAsync<BankData>(_fmodAssetRef);
 
-    public void Deinit()
-    {
-        _bank.UnloadBank(_bankTextAsset);
-    }
+    public void Deinit() => _bankData.UnloadBank();
 }
 }

@@ -4,7 +4,6 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 #if UNITY_EDITOR
 using UnityEditor.AddressableAssets;
@@ -18,54 +17,54 @@ public static class FmodExtensions
 
 #region Loading & Unloading Banks
 
-    public static async UniTask<TextAsset> LoadTextAsset(this AssetReference masterAssetRef) => await Addressables.LoadAssetAsync<TextAsset>(masterAssetRef);
-
-    public static Bank LoadBank(this TextAsset bankTextAsset)
+    /// <summary>
+    /// Loads a text asset as an FMOD bank using the provided asset reference.
+    /// </summary>
+    public static async UniTask<BankData> LoadBank(this AssetReference assetRef)
     {
-        Bank bank = new Bank();
+        var textAsset = await Addressables.LoadAssetAsync<TextAsset>(assetRef);
+     var bank = new Bank();
 
 #if UNITY_EDITOR
         if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
-            return bank;
+            return new BankData();
 #endif
 
-        var result = RuntimeManager.StudioSystem.loadBankMemory(bankTextAsset.bytes, LOAD_BANK_FLAGS.NORMAL, out bank);
-        if (result == FMOD.RESULT.OK)
-            Debug.Log("FMOD Bank loaded successfully.");
-        else
-            Debug.LogError("Failed to load FMOD Bank: " + result);
+     var result = RuntimeManager.StudioSystem.loadBankMemory(textAsset.bytes, LOAD_BANK_FLAGS.NORMAL, out bank);
+     if (result == FMOD.RESULT.OK)
+         Debug.Log("FMOD Bank loaded successfully.");
+     else
+         Debug.LogError("Failed to load FMOD Bank: " + result);
 
-        return bank;
+     return new BankData(bank, textAsset);
     }
-    
-    public static void UnloadBank(this Bank bank, AsyncOperationHandle<TextAsset> operationHandle)
+
+    /// <summary>
+    /// Unloads an FMOD bank and releases the associated text asset.
+    /// </summary>
+    public static void UnloadBank(this BankData bankData)
     {
 #if UNITY_EDITOR
         if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
             return;
 #endif
         
-        bank.unload();
-        Addressables.Release(operationHandle);
-    }
-
-    public static void UnloadBank(this Bank bank, TextAsset objectToRelease)
-    {
-#if UNITY_EDITOR
-        if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
-            return;
-#endif
-
-        bank.unload();
-        Addressables.Release(objectToRelease);
+        bankData.Bank.unload();
+        Addressables.Release(bankData.TextAsset);
     }
 
 #endregion
 
 #region EventInstances & Parameters controll
 
+    /// <summary>
+    /// Plays an FMOD event once at the given position.
+    /// </summary>
     public static void PlayOneShot(this EventReference soundEvent, Vector3 pos = default) => RuntimeManager.PlayOneShot(soundEvent, pos);
 
+    /// <summary>
+    /// Creates an FMOD event instance and optionally caches it by scene.
+    /// </summary>
     public static EventInstance GetInstance(this EventReference eventReference, string sceneName = "")
     {
         var eventInstance = RuntimeManager.CreateInstance(eventReference);
@@ -74,6 +73,9 @@ public static class FmodExtensions
         return eventInstance;
     }
 
+    /// <summary>
+    /// Creates an FMOD event instance and optionally caches it by scene.
+    /// </summary>
     public static EventInstance GetInstance(this string eventReference, string sceneName = "")
     {
         var eventInstance = RuntimeManager.CreateInstance(eventReference);
@@ -82,6 +84,9 @@ public static class FmodExtensions
         return eventInstance;
     }
 
+    /// <summary>
+    /// Caches an FMOD event instance by scene name.
+    /// </summary>
     public static void SaveInstanceByScene(this EventInstance eventInstance, string sceneName)
     {
         if (string.IsNullOrEmpty(sceneName)) return;
@@ -99,7 +104,10 @@ public static class FmodExtensions
         }
     }
 
-    public static void ReleaseInstanceByScene(string sceneName)
+    /// <summary>
+    /// Stops and releases all FMOD event instances cached for a scene.
+    /// </summary>
+    public static void ReleaseSceneInstances(string sceneName)
     {
         if (!_cachedInstances.TryGetValue(sceneName, out var sceneEventInstances)) return;
 
@@ -109,6 +117,9 @@ public static class FmodExtensions
         _cachedInstances.Remove(sceneName);
     }
 
+    /// <summary>
+    /// Stops and releases an FMOD event instance.
+    /// </summary>
     public static void ReleaseInstance(this EventInstance eventInstance)
     {
         eventInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
@@ -118,8 +129,7 @@ public static class FmodExtensions
     public static void SetParameter(this EventInstance eventInstance, string paramName, float paramValue) => eventInstance.setParameterByName(paramName, paramValue);
 
     public static void SetParameter(this EventInstance eventInstance, string paramName, string paramValue) => eventInstance.setParameterByNameWithLabel(paramName, paramValue);
-
-
+    
 #endregion
 }
 }
