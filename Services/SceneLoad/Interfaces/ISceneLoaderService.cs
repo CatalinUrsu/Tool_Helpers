@@ -2,7 +2,7 @@ using Cysharp.Threading.Tasks;
 
 namespace Helpers.Services
 {
-public interface IServiceSceneLoader
+public interface ISceneLoaderService
 {
     /// <summary>
     /// Async scene loading implementation. Await till scene is loaded. <br/>

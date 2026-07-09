@@ -3,7 +3,7 @@ using Helpers.Services;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
 public static class StateMachineExtension
 {

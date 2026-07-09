@@ -1,10 +1,10 @@
 using Cysharp.Threading.Tasks;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
 public interface IState
 {
-    StateMachine StateMachine { get; set; }
+    StatesMachine StatesMachine { get; set; }
     UniTask Exit();
 }
 }

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Helpers.Services
 {
-public class ProgressTrackingService : IServiceProgressTracking
+public class ProgressTrackingService : IProgressTrackingService
 {
 #region Fields
 

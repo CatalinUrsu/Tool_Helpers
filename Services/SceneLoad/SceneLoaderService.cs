@@ -8,24 +8,24 @@ using UnityEngine.ResourceManagement.ResourceProviders;
 
 namespace Helpers.Services
 {
-public class SceneLoaderService : IServiceSceneLoader
+public class SceneLoaderService : ISceneLoaderService
 {
 #region Fieds
 
     readonly Dictionary<string, SceneInstance> _loadedAddressableScene = new();
-    readonly IServiceProgressTracking _serviceProgressTracking;
+    readonly IProgressTrackingService _progressTrackingService;
 
 #endregion
 
 #region Public methods
 
-    public SceneLoaderService(IServiceProgressTracking serviceProgressTracking) => _serviceProgressTracking = serviceProgressTracking;
+    public SceneLoaderService(IProgressTrackingService progressTrackingService) => _progressTrackingService = progressTrackingService;
     
 
     public async UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams)
     {
             if (!string.IsNullOrEmpty(sceneLoadParams.LoadingTip))
-                _serviceProgressTracking.UpdateLoadingTip(sceneLoadParams.LoadingTip);
+                _progressTrackingService.UpdateLoadingTip(sceneLoadParams.LoadingTip);
 
             var sceneLoadResult = await GetSceneLoadResult(sceneLoadParams);
 
@@ -103,12 +103,12 @@ public class SceneLoaderService : IServiceSceneLoader
 
     IProgress<float> GetNewLoadingProgress(SceneLoadResult sceneLoadResult)
     {
-        _serviceProgressTracking.RegisterLoadingProgress(sceneLoadResult.SceneLoadProgress);
+        _progressTrackingService.RegisterLoadingProgress(sceneLoadResult.SceneLoadProgress);
 
         var progress = Progress.CreateOnlyValueChanged<float>(x =>
         {
             sceneLoadResult.SceneLoadProgress.SceneProgress = x;
-            _serviceProgressTracking.UpdateProgress();
+            _progressTrackingService.UpdateProgress();
         });
         return progress;
     }

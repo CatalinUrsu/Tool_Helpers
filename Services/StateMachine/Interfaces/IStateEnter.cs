@@ -1,6 +1,6 @@
 using Cysharp.Threading.Tasks;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
 public interface IStateEnter : IState
 {

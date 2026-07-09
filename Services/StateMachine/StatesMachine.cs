@@ -2,16 +2,16 @@
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace Helpers.StateMachine
+namespace Helpers.Services
 {
-public sealed class StateMachine
+public sealed class StatesMachine
 {
     public string StateName => _currentState.GetType().Name;
     
     readonly Dictionary<Type, IState> _states;
     IState _currentState { get; set; }
 
-    public StateMachine(params IState[] states)
+    public StatesMachine(params IState[] states)
     {
         _states = new Dictionary<Type, IState>();
 
@@ -25,7 +25,7 @@ public sealed class StateMachine
             if (_states.ContainsKey(state.GetType()))
                 continue;
 
-            state.StateMachine = this;
+            state.StatesMachine = this;
             _states.Add(state.GetType(), state);
         }
     }

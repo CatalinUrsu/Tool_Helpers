@@ -4,13 +4,13 @@ using System.Collections.Generic;
 
 namespace Helpers.Services
 {
-public class SplashScreenService : IServiceSplashScreen
+public class SplashScreenService : ISplashScreenService
 {
     ISplashScreen _currentSplashScreen;
     readonly Dictionary<string, ISplashScreen> _splashScreens = new();
-    readonly IServiceProgressTracking _serviceProgressTracking;
+    readonly IProgressTrackingService _progressTrackingService;
 
-    public SplashScreenService(IServiceProgressTracking serviceProgressTracking) => _serviceProgressTracking = serviceProgressTracking;
+    public SplashScreenService(IProgressTrackingService progressTrackingService) => _progressTrackingService = progressTrackingService;
 
     public void RegisterSplashScreen(string key, ISplashScreen splashScreen)
     {
@@ -18,7 +18,7 @@ public class SplashScreenService : IServiceSplashScreen
         Debug.LogError($"Splash screen with key '{key}' is already registered.");
     }
 
-    public async UniTask ShowPage(string key, bool skipAnimation)
+    public async UniTask Show(string key, bool skipAnimation)
     {
         if (_splashScreens.TryGetValue(key, out var splashScreen))
         {
@@ -27,7 +27,7 @@ public class SplashScreenService : IServiceSplashScreen
         }
     }
 
-    public async UniTask HidePage()
+    public async UniTask Hide()
     {
         if (_currentSplashScreen == null)
         {
@@ -37,7 +37,7 @@ public class SplashScreenService : IServiceSplashScreen
         
         await _currentSplashScreen.HidePanel();
         _currentSplashScreen = null;
-        _serviceProgressTracking.ResetProgress();
+        _progressTrackingService.ResetProgress();
     }
 }
 }

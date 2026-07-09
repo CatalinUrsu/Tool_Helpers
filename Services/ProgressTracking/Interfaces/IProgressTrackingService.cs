@@ -3,7 +3,7 @@ using Cysharp.Threading.Tasks;
 
 namespace Helpers.Services
 {
-public interface IServiceProgressTracking
+public interface IProgressTrackingService
 {
     int LoadProgressCount { get; set; }
     bool UnloadsAreFinished { get; }
