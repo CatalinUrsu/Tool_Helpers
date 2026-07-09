@@ -11,8 +11,8 @@ public class Pool<T>
     readonly Action<T> _onRelease;
     readonly Action<T> _onDestroy;
     readonly int _maxSize;
-    protected readonly Queue<T> _pool = new();
-    protected readonly HashSet<T> _active = new();
+    readonly Queue<T> _pool = new();
+    readonly HashSet<T> _active = new();
 
     /// <summary>
     /// Assign values to pool data and preload several amount of items if is neded
