@@ -37,57 +37,136 @@ https://github.com/CatalinUrsu/Tool_Helpers.git
 ```
 
 # Audio 🔊
-For audio maangement, is used <b>FMOD</b> - sound engine that cover all needs, this is first project where I used it and now it will be a permanent component
-of all my projects.
-<br><img src="https://i.postimg.cc/L6TnZtFd/Fmod-Events.png" alt="FmodEvents" width="500">
+The Audio module contains helper scripts for working with FMOD events, banks, and reusable event instances.
+> **Note:** Audio scripts are placed under a separate assembly definition and are compiled only when the
+> `FMOD_INSTALLED` assembly definition symbol is added to the project.
+- [BankLoader](Audio/BankLoader.cs) loads an FMOD bank from an <b>Addressable `TextAsset`</b> and unloads it when it is no longer needed.
+- [FmodExtensions](Audio/FmodExtensions.cs) provides shortcuts for playing one-shot sounds, creating event instances, setting parameters,
+  and releasing cached instances by scene.
+- [FactoryFmodEvents](Audio/FactoryFmodEvents.cs) creates pooled FMOD event instances, which is useful for frequently played sounds such as
+  shots, hits, impacts, or UI feedback. <b>Usage:</b>
+- [FmodSettingsOverrideOnPlay](Audio/FmodSettingsOverrideOnPlay.cs) adjusts FMOD import settings in Editor play mode to simplify local testing with
+  Addressables.
 
-It’s great tool for memory management for audio. Instead of working with audio self, need to create events from audio clips.
-These events need to be stored in banks that can be loaded and unloaded at runtime. Also, it has intuitive and powerful profiling window, personally I used
-it to check the optimal amount of event instances in scene, like - shoot or hit audio.
-<br><img src="https://i.postimg.cc/FHCzThKD/Fmod-Pooling.png" width="500">
-
-For controlling volume and effect during runtime, I used VCA and Snapshots that also are extremely easy to set and change in unity. And last but not
-least - Audio Optimization, all settings that can be changed in Unity (EncodingFormat, LoadingMode, SampleRate) are done in FMOD.
-<br><img src="https://i.postimg.cc/FHH1bYhY/Fmod-Optimization.png" width="250">
-
-
-# <br>Pool System 🔄
-For memory and cpu optimization, it’s a good practice to use pooling system instead of creating and destroy objects each time.
-Unity has its own PoolSystem, but I wanted to make my own, because I have more control of it, can expand it and so on. My PoolSystem has 3
-components : [Pool](#pool-), [PooledObject](#pooled-object-), [Factory](#factory-).
-<br><img src="https://i.postimg.cc/mrcDqKzR/Pool.png" alt="Pool" width="370">
-
-## Pool ♻️
-Pool is just a generic pool class, used only for get and release objects, similar to unity’s one, but simplified
-
-## Pooled Object 📦
-Base class for objects that are pooled. Has the option to set some config when it is instantiated and when it gets from pool (ex: set initial speed,
-set different texture each time when it gets from pool). And also has option to release itself to pool (ex: when bullet hit something)
 ```csharp
-using System;
-using UnityEngine;
+using FMOD.Studio;
+using FMODUnity;
+using Helpers.Audio;
+using Helpers.PoolSystem;
 
-namespace Helpers.PoolSystem
-{
-public class PooledObject : MonoBehaviour
-{
-    public event Action OnReleaseToPool;
+EventReference soundReference;
 
-    public virtual void Init(Action<PooledObject> onReleaseToPool, object config) => OnReleaseToPool += () => onReleaseToPool(this);
+// Create pool for often-used sounds.
+var hitSoundPool = new FactoryFmodEvents.Builder(soundReference)
+                   .SetPreloadCount(5)        // Create 5 instances on pool init.
+                   .SetMaxCount(7)            // Allow up to 7 active instances.
+                   .Set3DAttributes(true)     // Enable spatial sound support.
+                   .Build();
 
-    public virtual void Set(object config = null) { }
+// Get instance from pool.
+EventInstance instance1 = hitSoundPool.Get();
 
-    protected virtual void OnReleaseToPool_raise() => OnReleaseToPool?.Invoke();
-}
-}
+// Return instance to pool manually if needed.
+hitSoundPool.Release(instance1);
+
+// Play simple one-shot sound.
+soundReference.PlayOneShot();
+
+// Create standalone instance.
+EventInstance instance2 = soundReference.GetInstance();
+
+// Set float parameter.
+instance2.SetParameter("paramName1", 123);
+
+// Set labeled parameter.
+instance2.SetParameter("paramName2", "NewValue");
+
+// Stop and release standalone instance.
+instance2.ReleaseInstance();
+
+// Create instance cached by scene name.
+instance2 = soundReference.GetInstance("SceneName");
+
+// Release all instances cached for this scene.
+FmodExtensions.ReleaseSceneInstances("SceneName");
 ```
 
 
+# <br>Pool System 🔄
+<b>PoolSystem</b> is used to reuse objects instead of creating and destroying them every time.  
+It is useful for bullets, enemies, effects, sounds, UI elements, or any object that appears often.
+<br><img src="https://i.postimg.cc/mrcDqKzR/Pool.png" alt="Pool" width="370">
+
+<b>Main parts:</b>
+- [Pool](Global/PoolSystem/Pool.cs) stores inactive objects and gives them back when needed.
+- [PooledObject](Global/PoolSystem/PooledObject.cs) - Base class for pooled scene objects. 
+  - `Init` - used to set ReturnToPool action and some configs (optional)
+  - `Set` - used to set config data when its needed (f.e. - each time when iss taken from pool 
+  - Objects can also return themselves to pool by calling `OnReleaseToPool_raise()`.
+- [Factory](Global/PoolSystem/Factory.cs) creates and configures pools in a simple builder style.
+
+```csharp using UnityEngine; using Source.Gameplay; using Helpers.PoolSystem;
+[SerializeField] Bullet _bulletPrefab;
+[SerializeField] Transform _poolActive;
+[SerializeField] Transform _poolInactive;
+Pool<PooledObject> _bulletPool;
+
+void TestPool()
+{
+var bulletPower = 10f;
+
+    // Create pool for often-used objects.
+    _bulletPool = new Factory.Builder(_bulletPrefab)
+                  .SetConfig(bulletPower)               // Pass shared init data to created objects.
+                  .SetParents(_poolActive, _poolInactive) // Move active/inactive objects under different parents.
+                  .SetPreloadCount(10)                  // Create 10 objects on pool init.
+                  .SetMaxCount(15)                      // Keep up to 15 inactive objects.
+                  .Build();
+
+    // Get objects from pool.
+    PooledObject bullet = _bulletPool.Get();
+    PooledObject bullet2 = _bulletPool.Get();
+
+    // Apply post-spawn setup, if object needs it.
+    bullet.Set();
+
+    // Return specific object to pool.
+    _bulletPool.Release(bullet);
+
+    // Return all active objects to pool.
+    _bulletPool.ReleaseAll();
+
+    // Destroy pooled objects and clear pool data.
+    _bulletPool.Clear();
+}
+```
+
+## PooledObject 📦
+Base class for pooled scene objects.  
+Override `Init` to read shared config once, and `Set` to reset object state each time it is taken from pool.
+
+Objects can also return themselves to pool by calling `OnReleaseToPool_raise()`.
+```
+
+csharp using System; using UnityEngine; using Helpers.PoolSystem;
+public class Bullet : PooledObject { public override PooledObject Init(ActiononReleaseToPool, object config = null) { // Read shared config here. return base.Init(onReleaseToPool, config); }
+public override void Set(object config = null)
+{
+    // Reset state here before using object again.
+}
+
+void OnTriggerEnter2D(Collider2D other)
+{
+    // Return this object to pool.
+    OnReleaseToPool_raise();
+}
+}
+``` 
+
 ## Factory 🏭
-Because creation of objects using pool was similar for each pooled object (bullet, effects, enemies) I decided to use a factory pattern for it.
-I have two factories that can be used in any projects <b>([FactoryGO](PoolSystem/FactoryGO.cs), [FactoryFmodEvents](PoolSystem/FactoryFmodEvents.cs))</b>. Both of them are used just to set pools and both of them
-use a Builder from more friendly LINQ-style code and as a bonus it resolves some “issues” like - the need to have multiple constructors, telescoping
-constructors, using optional parameters.
+Factory creates pools for `PooledObject` prefabs.  
+Use it when pool creation logic is similar for many objects, like bullets, enemies, and effects.
+
 <br><img src="https://i.postimg.cc/T1XX24HN/Factory.png" alt="Factory" width="800">
 
 
