@@ -1,13 +1,12 @@
-using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 
 namespace Helpers.Services
 {
-public class CameraService : IServiceCamera
+public class CameraService : ICameraService
 {
     protected Camera _mainCamera;
-    readonly Dictionary<string, Camera> _cachedCameras = new();
+    protected readonly Dictionary<string, Camera> _cachedCameras = new();
 
     public virtual void RegisterMainCamera(Camera camera)
     {
@@ -16,39 +15,23 @@ public class CameraService : IServiceCamera
         _mainCamera = camera;
     }
 
-    public virtual void RegisterCamera(string key, Camera camera, bool addToStack)
-    {
-        if (_cachedCameras.TryAdd(key, camera)) return;
-            Debug.LogError($"[CamerasService] Camera with key '{key}' already exist");
-        
-    }
-
-    public virtual void UnregisterCamera(Camera camera)
-    {
-        if (_cachedCameras.ContainsKey(camera.name))
-            _cachedCameras.Remove(camera.name);
-    }
-
     public Camera GetMainCamera() => _mainCamera;
+
+    public virtual void RegisterCamera(string key, Camera camera, bool addToStack = false)
+    {
+        if (!_cachedCameras.TryAdd(key, camera))
+            Debug.LogError($"[CamerasService] Camera with key '{key}' already exist");
+    }
+
+    public virtual void UnregisterCamera(string key) => _cachedCameras.Remove(key);
 
     public Camera GetCameraByKey(string name)
     {
         if (_cachedCameras.TryGetValue(name, out var camera))
             return camera;
 
-        Debug.LogError($"[CamerasService] Not found camera with name '{name}'!");
+        Debug.LogError($"[CamerasService] Not found camera with key '{name}'!");
         return null;
     }
-
-    public Camera GetCameraByTag(string tag)
-    {
-        var camera = _cachedCameras.FirstOrDefault(x => x.Value.CompareTag(tag)).Value;
-        if (camera != null)
-            return camera;
-
-        Debug.LogError($"[CamerasService] Not found camera with tag '{tag}'!");
-        return null;
-    }
-
 }
 }

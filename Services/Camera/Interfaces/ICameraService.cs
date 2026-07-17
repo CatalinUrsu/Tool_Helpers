@@ -3,21 +3,19 @@ using UnityEngine;
 namespace Helpers.Services
 {
     /// <summary>
-    /// Interface for managing camera-related operations in the application. <br />
+    /// Service for managing camera-related operations in the application. <br />
     /// F.E., registering the main camera, managing multiple cameras, and retrieving cameras by name or tag.
     /// </summary>
-    public interface IServiceCamera
+    public interface ICameraService
     {
         void RegisterMainCamera(Camera camera);
 
-        void RegisterCamera(string key, Camera camera, bool addToStack = true);
-        
-        void UnregisterCamera(Camera camera);
-        
         Camera GetMainCamera();
         
-        Camera GetCameraByKey(string name);
+        void RegisterCamera(string key, Camera camera, bool addToStack = true);
 
-        Camera GetCameraByTag(string tag);
+        void UnregisterCamera(string key);
+
+        Camera GetCameraByKey(string name);
     }
 }
