@@ -1,23 +1,23 @@
 ﻿namespace Helpers.Services
 {
     /// <summary>
-    /// Represents the progress of scene loading, including the scene itself and its EntryPoint
+    /// Progress of scene loading and setup-ing
     /// </summary>
     public class SceneLoadProgress
     {
         /// <summary>
-        /// The progress of the scene loading, represented as a float value between 0 and 1.
+        /// The progress of the scene loading, (value between 0 and 1)
         /// </summary>
-        public float SceneProgress;
+        public float LoadProgress;
 
         /// <summary>
-        /// The progress of the entry point loading, represented as a float value between 0 and 1.
+        /// The progress of elements initialization like (object spawning, setup, loading additional content
         /// </summary>
-        public float EntryPointProgress;
+        public float SetupProgress;
 
         /// <summary>
-        /// Calculates the average progress of the scene and entry point loading.
+        /// Calculates the average progress of the scene load and scene setup.
         /// </summary>
-        public float GetAvgProgress() => (SceneProgress + EntryPointProgress) / 2;
+        public float GetAvgProgress() => (LoadProgress + SetupProgress) / 2;
     }
 }

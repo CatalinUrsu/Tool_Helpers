@@ -20,25 +20,20 @@ public class SceneLoaderService : ISceneLoaderService
 #region Public methods
 
     public SceneLoaderService(IProgressTrackingService progressTrackingService) => _progressTrackingService = progressTrackingService;
-    
 
-    public async UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams)
+    public async UniTask LoadScene(SceneLoadParams sceneLoadParams, SceneLoadResult loadResult)
     {
-            if (!string.IsNullOrEmpty(sceneLoadParams.LoadingTip))
-                _progressTrackingService.UpdateLoadingTip(sceneLoadParams.LoadingTip);
+        if (!string.IsNullOrEmpty(sceneLoadParams.LoadingTip))
+            _progressTrackingService.UpdateLoadingTip(sceneLoadParams.LoadingTip);
 
-            var sceneLoadResult = await GetSceneLoadResult(sceneLoadParams);
-
-            return sceneLoadResult;
+        await (sceneLoadParams.IsAddressable ? LoadAddressableScene(sceneLoadParams, loadResult) : LoadBuildScene(sceneLoadParams, loadResult));
     }
 
     public async UniTask UnloadScene(string sceneName)
     {
         try
         {
-            await (_loadedAddressableScene.ContainsKey(sceneName)
-                ? UnloadByAddressable(sceneName)
-                : UnloadBySceneManager(sceneName));
+            await (_loadedAddressableScene.ContainsKey(sceneName) ? UnloadByAddressable(sceneName) : UnloadBySceneManager(sceneName));
         }
         catch (Exception e)
         {
@@ -50,69 +45,53 @@ public class SceneLoaderService : ISceneLoaderService
 
 #region Private methods
 
-    UniTask<SceneLoadResult> GetSceneLoadResult(SceneLoadParams sceneLoadParams)
+    async UniTask LoadAddressableScene(SceneLoadParams sceneLoadParams, SceneLoadResult loadingSceneData)
     {
-        return sceneLoadParams.IsAddressable
-            ? LoadAddressableScene(sceneLoadParams)
-            : LoadBuildScene(sceneLoadParams);
-    }
-
-    async UniTask<SceneLoadResult> LoadAddressableScene(SceneLoadParams sceneLoadParams)
-    {
-        var loadingSceneData = new SceneLoadResult();
-
         if (_loadedAddressableScene.TryGetValue(sceneLoadParams.SceneName, out var value))
         {
+            loadingSceneData.SceneLoadProgress.LoadProgress = 1;
             loadingSceneData.LoadedScene = value.Scene;
         }
         else
         {
-            var progress = sceneLoadParams.TrackProgress ? GetNewLoadingProgress(loadingSceneData) : new Progress<float>();
+            var progress = SubscribeProgressToValueChange(loadingSceneData);
             var asyncOperationHandle = Addressables.LoadSceneAsync(sceneLoadParams.SceneName, sceneLoadParams.LoadParameters.loadSceneMode);
 
             await asyncOperationHandle.ToUniTask(progress);
 
+            loadingSceneData.SceneLoadProgress.LoadProgress = 1;
             loadingSceneData.LoadedScene = asyncOperationHandle.Result.Scene;
             OnLoadingSceneComplete_handler(sceneLoadParams.SceneName, loadingSceneData.LoadedScene, sceneLoadParams.SetSceneActive);
         }
 
-        return loadingSceneData;
+        await UniTask.CompletedTask;
     }
 
-    async UniTask<SceneLoadResult> LoadBuildScene(SceneLoadParams sceneLoadParams)
+    async UniTask LoadBuildScene(SceneLoadParams sceneLoadParams, SceneLoadResult loadingSceneData)
     {
-        var loadingSceneData = new SceneLoadResult();
-
         if (SceneManager.GetSceneByName(sceneLoadParams.SceneName).isLoaded)
         {
+            loadingSceneData.SceneLoadProgress.LoadProgress = 1;
             loadingSceneData.LoadedScene = SceneManager.GetSceneByName(sceneLoadParams.SceneName);
         }
         else
         {
-            var progress = sceneLoadParams.TrackProgress ? GetNewLoadingProgress(loadingSceneData) : new Progress<float>();
+            var progress = SubscribeProgressToValueChange(loadingSceneData);
             var asyncOperation = SceneManager.LoadSceneAsync(sceneLoadParams.SceneName, sceneLoadParams.LoadParameters);
 
             await asyncOperation.ToUniTask(progress);
 
+            loadingSceneData.SceneLoadProgress.LoadProgress = 1;
             loadingSceneData.LoadedScene = SceneManager.GetSceneByName(sceneLoadParams.SceneName);
             OnLoadingSceneComplete_handler(sceneLoadParams.SceneName, loadingSceneData.LoadedScene, sceneLoadParams.SetSceneActive);
         }
 
-        return loadingSceneData;
+        await UniTask.CompletedTask;
     }
 
-    IProgress<float> GetNewLoadingProgress(SceneLoadResult sceneLoadResult)
-    {
-        _progressTrackingService.RegisterLoadingProgress(sceneLoadResult.SceneLoadProgress);
+    static IProgress<float> SubscribeProgressToValueChange(SceneLoadResult sceneLoadResult) => 
+        Progress.CreateOnlyValueChanged<float>(x => sceneLoadResult.SceneLoadProgress.LoadProgress = x);
 
-        var progress = Progress.CreateOnlyValueChanged<float>(x =>
-        {
-            sceneLoadResult.SceneLoadProgress.SceneProgress = x;
-            _progressTrackingService.UpdateProgress();
-        });
-        return progress;
-    }
-    
     UniTask UnloadBySceneManager(string sceneName)
     {
         var scene = SceneManager.GetSceneByName(sceneName);
@@ -138,7 +117,7 @@ public class SceneLoaderService : ISceneLoaderService
         asyncOperationHandle.Completed += _ => _loadedAddressableScene.Remove(sceneName);
         return asyncOperationHandle.ToUniTask();
     }
-    
+
     void OnLoadingSceneComplete_handler<T>(string sceneName, T result, bool setActiveScene)
     {
         Scene scene = default;
@@ -156,7 +135,7 @@ public class SceneLoaderService : ISceneLoaderService
         if (setActiveScene)
             SceneManager.SetActiveScene(scene);
     }
-    
+
 #endregion
 }
 }

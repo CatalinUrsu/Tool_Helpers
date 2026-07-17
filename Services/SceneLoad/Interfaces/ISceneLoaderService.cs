@@ -6,11 +6,11 @@ public interface ISceneLoaderService
 {
     /// <summary>
     /// Async scene loading implementation. Await till scene is loaded. <br/>
-    /// It additionaly update loading tip and progress if is needed (need to set in <see cref="SceneLoadParams"/> parameter).
+    /// It additionally update loading tip and progress if is needed (need to set in <see cref="SceneLoadParams"/> parameter).
     /// </summary>
     /// <param name="sceneLoadParams">List of parameters (name, progress tip, use addressable or ResourceManager...)</param>
-    /// <returns>List of info about loaded scene, (Scene and LoadProgress)</returns>
-    UniTask<SceneLoadResult> LoadScene(SceneLoadParams sceneLoadParams);
+    /// <param name="loadResult">Out Result of loaded scene, can be used to track loading progress</param>
+    UniTask LoadScene(SceneLoadParams sceneLoadParams, SceneLoadResult loadResult);
     
     /// <summary>
     /// Unload scene asynchronously by name. If automatically check how to unload it, using <b>Addressable</b> or <b>SceneManager</b>

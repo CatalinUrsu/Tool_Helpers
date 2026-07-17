@@ -7,7 +7,6 @@ public struct SceneLoadParams
     public string SceneName { get; private set; }
     public string LoadingTip { get; private set; }
     public bool IsAddressable { get; private set; }
-    public bool TrackProgress { get; private set; }
     public bool SetSceneActive { get; private set; }
     public LoadSceneParameters LoadParameters { get; private set; }
 
@@ -16,7 +15,6 @@ public struct SceneLoadParams
         readonly string _sceneName;
         string _loadingTip = string.Empty;
         bool _isAddressable;
-        bool _trackProgress = true;
         bool _setSceneActive;
         LoadSceneParameters _loadParameters = new(LoadSceneMode.Additive);
 
@@ -43,12 +41,6 @@ public struct SceneLoadParams
             return this;
         }
 
-        public Builder SetTrackProgress(bool trackProgress)
-        {
-            _trackProgress = trackProgress;
-            return this;
-        }
-
         public Builder SetLoadParameters(LoadSceneParameters loadParameters)
         {
             _loadParameters = loadParameters;
@@ -62,7 +54,6 @@ public struct SceneLoadParams
                 SceneName = _sceneName,
                 LoadingTip = _loadingTip,
                 IsAddressable = _isAddressable,
-                TrackProgress = _trackProgress,
                 SetSceneActive = _setSceneActive,
                 LoadParameters = _loadParameters
             };
