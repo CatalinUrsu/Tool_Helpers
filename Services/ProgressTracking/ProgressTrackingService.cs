@@ -38,8 +38,6 @@ public class ProgressTrackingService : IProgressTrackingService
         OnUpdateProgress?.Invoke(0);
         OnUpdateLoadingTip?.Invoke(string.Empty);
     }
-    
-    public void RegisterLoadingProgress(SceneLoadProgress sceneLoadProgress) => _loadingProcesses.Add(sceneLoadProgress);
 
     public void RegisterLoadingProgress(params SceneLoadProgress[] sceneLoadProgress)
     {
