@@ -5,8 +5,7 @@ namespace Helpers.Services
 {
 public interface IProgressTrackingService
 {
-    int LoadProgressCount { get; set; }
-    bool UnloadsAreFinished { get; }
+    bool UnloadsFinished { get; }
     event Action<float> OnUpdateProgress;
     event Action<string> OnUpdateLoadingTip;
 
@@ -17,14 +16,13 @@ public interface IProgressTrackingService
     void ResetProgress();
     
     /// <summary>
-    /// Store <b>loadings</b> at runtime to have ref to original value during whole loading
-    /// Store LoadingProgress to update loading bar. Should be called in <b>StateEnter</b> of each scene
+    /// Resister <b>SceneLoadProgress</b> to update total loading progress.
     /// </summary>
-    void RegisterLoadingProgress(SceneLoadProgress sceneLoadProgress);
-
+    void RegisterLoadingProgress(params SceneLoadProgress[] sceneLoadProgress);
+    
     /// <summary>
     /// Register unload tasks and start track till all tasks are complete<br/>
-    /// To check if unloads are finished, use <b><see cref="UnloadsAreFinished"/></b> field. 
+    /// To check if unloads are finished, use <b><see cref="UnloadsFinished"/></b> field. 
     /// </summary>
     void RegisterUnloadProcesses(params UniTask[] unloadingTasks);
     
