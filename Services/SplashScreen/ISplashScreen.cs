@@ -4,7 +4,7 @@ namespace Helpers.Services
 {
 public interface ISplashScreen
 {
-    public UniTask ShowPanel(bool skipAnimation);
-    public UniTask HidePanel();
+    public UniTask Show(bool skipAnimation = false);
+    public UniTask Hide();
 }
 }
