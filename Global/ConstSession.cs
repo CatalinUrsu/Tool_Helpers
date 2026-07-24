@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Constants
+namespace Helpers
 {
 public static class ConstSession
 {
