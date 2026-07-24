@@ -4,7 +4,7 @@ using UnityEngine.AddressableAssets;
 
 namespace Helpers.Audio
 {
-public class BankLoader : MonoBehaviour
+public class BankLoader : MonoBehaviour, IBankLoader
 {
     [SerializeField] AssetReference _fmodAssetRef;
     
