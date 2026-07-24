@@ -1,5 +1,4 @@
 ﻿using System;
-using Constants;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -57,6 +56,16 @@ public static class SaveSystem
             File.Replace(tempPath, filePath, filePath + EXTENSION_BACKUP);
         else
             File.Move(tempPath, filePath);
+    }
+
+    public static T LoadOrCreate<T>(string filePath) where T : class, new()
+    {
+        var value = TryLoad(filePath, out T loaded) ? loaded : new T();
+
+        if (value is IInitializableData runtime)
+            runtime.Initialize();
+
+        return value;
     }
 
     /// <summary>
