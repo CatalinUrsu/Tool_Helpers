@@ -1,26 +1,53 @@
+using R3;
 using System;
+using R3.Triggers;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
 namespace Helpers.UI
 {
 [AddComponentMenu("UI (Canvas)/Helpers/Button Helper")]
-public class ButtonHelper : Button
+[RequireComponent(typeof(Button))]
+public class ButtonHelper : MonoBehaviour
 {
-    public event Action OnTouchDown;
-    public event Action OnTouchUp;
-    
-    public override void OnPointerDown(PointerEventData eventData)
+    public Button Btn { get; private set; }
+    public RectTransform RT { get; private set; }
+
+    public event Action OnPointerDown;
+    public event Action OnPointerUp;
+
+    protected void OnValidate()
     {
-        base.OnPointerDown(eventData);
-        OnTouchDown?.Invoke();
+        Btn ??= GetComponent<Button>();
+        RT ??= GetComponent<RectTransform>();
     }
 
-    public override void OnPointerUp(PointerEventData eventData)
+    [ContextMenu("Init")]
+    public virtual void Init()
     {
-        base.OnPointerUp(eventData);
-        OnTouchUp?.Invoke();
+        Btn.OnPointerDownAsObservable()
+           .Subscribe(_ => OnPointerDown_raise())
+           .AddTo(this);
+
+        Btn.OnPointerUpAsObservable()
+           .Subscribe(_ => OnPointerUp_raise())
+           .AddTo(this);
     }
+
+    void OnPointerDown_raise()
+    {
+        if(!IsInteractable()) return;
+        
+        OnPointerDown?.Invoke();
+    }
+
+    void OnPointerUp_raise()
+    {
+        if(!IsInteractable()) return;
+        
+        OnPointerUp?.Invoke();
+    }
+    
+    bool IsInteractable() => Btn.interactable;
 }
 }

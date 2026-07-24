@@ -62,29 +62,15 @@ public class UIMenuItems
         PlaceUIElement(go.gameObject, menuCommand);
     }
 
-    [MenuItem("GameObject/UI (Canvas)/Helpers/Button", false)]
+    [MenuItem("GameObject/UI (Canvas)/Helpers/ButtonHelper", false)]
     public static void CreateButton(MenuCommand menuCommand)
     {
         var btnGO = CreateUIElementRoot("Btn", _buttonSize, typeof(Image), typeof(ButtonHelper));
         var childTxtGO = CreateUIElementRoot("Txt", _squareSize, typeof(TextMeshProUGUI));
 
         SetParentAndAlign(childTxtGO, btnGO);
-        
-        SetButton();
         SetText(childTxtGO, TextAlignmentOptions.Center, "Button");
-        SetImage(btnGO, _uiResources.standard, Color.white);
-        
         PlaceUIElement(btnGO, menuCommand);
-
-        void SetButton()
-        {
-            var btn = btnGO.GetComponent<ButtonHelper>();
-            ColorBlock colors = btn.colors;
-
-            colors.highlightedColor = new Color(0.882f, 0.882f, 0.882f);
-            colors.pressedColor = new Color(0.698f, 0.698f, 0.698f);
-            colors.disabledColor = new Color(0.521f, 0.521f, 0.521f);
-        }
     }
 
     [MenuItem("GameObject/UI (Canvas)/Helpers/Dropdown", false)]
