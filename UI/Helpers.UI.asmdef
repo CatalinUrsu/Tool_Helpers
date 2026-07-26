@@ -1,13 +1,14 @@
 {
     "name": "Helpers.UI",
-    "rootNamespace": "",
+    "rootNamespace": "Helpers",
     "references": [
         "Helpers",
         "R3.Unity",
-        "Unity.TextMeshPro",
-        "Unity.Localization",
+        "UniTask",
         "EditorAttributes",
-        "DOTween.Modules"
+        "DOTween.Modules",
+        "Unity.TextMeshPro",
+        "Unity.Localization"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

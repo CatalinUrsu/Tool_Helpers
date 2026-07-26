@@ -1,6 +1,6 @@
 {
     "name": "Helpers.Audio",
-    "rootNamespace": "",
+    "rootNamespace": "Helpers",
     "references": [
         "GUID:16aa32b06da7c104a994d22b81c651b2",
         "GUID:f51ebe6a0ceec4240a699833d6309b23",

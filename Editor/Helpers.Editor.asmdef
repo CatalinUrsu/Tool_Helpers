@@ -1,6 +1,6 @@
 {
     "name": "Helpers.Editor",
-    "rootNamespace": "",
+    "rootNamespace": "Helpers",
     "references": [
         "GUID:16aa32b06da7c104a994d22b81c651b2",
         "GUID:8cb9359fd1f76b543add716f005ad32a",
