@@ -9,13 +9,14 @@ namespace Helpers.UI
 public class TabsGroup : MonoBehaviour
 {
 #region Fields
-    
+
     [SerializeField] protected List<Tab> _tabs = new();
-    
-    protected bool _tabIsSwapping;
+
     protected Tab _activeTab;
+    protected UniTask _currentSwapTask;
     protected List<UniTask> _tabsSwapTasks = new();
-    protected CancellationTokenSource _cts = new();
+    protected CancellationTokenSource _initCts = new();
+    protected CancellationTokenSource _swapCts = new();
 
 #endregion
 
@@ -27,8 +28,8 @@ public class TabsGroup : MonoBehaviour
         var tabPanelInitTasks = new List<UniTask>();
 
         InitTabs();
-        TabBtnClick_handler(_tabs[0], true);
-        
+        StartTabSwapping(_tabs[0], true).Forget();
+
         _activeTab = _tabs.Count > 0 ? _tabs[0] : _activeTab;
         await UniTask.WhenAll(tabPanelInitTasks);
         return;
@@ -38,11 +39,12 @@ public class TabsGroup : MonoBehaviour
             foreach (var tab in _tabs)
             {
                 var tabBtn = tab.TabBtn;
-                
+
                 tabBtn.Init();
                 tabBtn.BtnHelper.Btn.onClick.AddListener(() => TabBtnClick_handler(tab));
 
-                tabPanelInitTasks.Add(tab.TabPanel.Init(_cts)
+                tabPanelInitTasks.Add(tab.TabPanel
+                                         .Init(_initCts.Token)
                                          .ContinueWith(UpdateTabPanelInited));
             }
         }
@@ -54,63 +56,75 @@ public class TabsGroup : MonoBehaviour
         }
     }
 
+    public virtual async UniTask Deinit()
+    {
+        _initCts?.Dispose();
+        _swapCts?.Dispose();
+        _tabs.ForEach(tab => tab.TabPanel.Deinit());
+        await UniTask.CompletedTask;
+    }
+
 #endregion
 
 #region Private methods
 
-    void TabBtnClick_handler(Tab selectedTab, bool skipAnimation = false)
+    // TODO: Check for Race condition. Create UniTest and check if fast clicking doesn't broke logic
+    void TabBtnClick_handler(Tab selectedTab)
     {
-        if (!Equals(_activeTab, selectedTab)) 
-            StartTabSwapping().Forget();
-        return;
+        if (Equals(_activeTab, selectedTab))
+            return;
 
-        async UniTaskVoid StartTabSwapping()
-        {
-            await CancelTabSwappingTask();
-
-            if (_cts.IsCancellationRequested)
-                _cts = new CancellationTokenSource();
-
-            SwapTabs(selectedTab, skipAnimation).Forget();
-        }
+        StartTabSwapping(selectedTab).Forget();
     }
 
-    protected virtual async UniTaskVoid SwapTabs(Tab selectedTab, bool skipAnimation)
+    async UniTaskVoid StartTabSwapping(Tab selectedTab, bool skipAnimation = false)
+    {
+        // Wait until the previous swap finishes its cancellation/cleanup.
+        if (_currentSwapTask.Status == UniTaskStatus.Pending)
+        {
+            _swapCts?.Cancel();
+
+            if (_currentSwapTask.Status == UniTaskStatus.Pending)
+                await _currentSwapTask.SuppressCancellationThrow();
+            
+            _swapCts = new CancellationTokenSource();
+        }
+        
+        _currentSwapTask = SwapTabs(selectedTab, skipAnimation);
+        
+        // Ignore cancellation - it's expected when another tab is clicked.
+        await _currentSwapTask.SuppressCancellationThrow();
+    }
+    
+    async UniTask SwapTabs(Tab selectedTab, bool skipAnimation)
     {
         SetTabsSwapTasks(selectedTab, skipAnimation);
-        _tabIsSwapping = true;
-        _activeTab = selectedTab;
-        
-        await UniTask.WhenAll(_tabsSwapTasks);
-        await selectedTab.TabPanel.Show(skipAnimation, _cts);
 
-        _tabIsSwapping = false;
+        await UniTask.WhenAll(_tabsSwapTasks);
+        
+        _activeTab = selectedTab;
+        await selectedTab.TabPanel.Show(skipAnimation, _swapCts.Token);
     }
 
     protected virtual void SetTabsSwapTasks(Tab selectedTab, bool skipAnimation)
     {
         _tabsSwapTasks.Clear();
-        
-        _tabsSwapTasks.AddRange(new List<UniTask>
+
+        // If there is a valid active tab, add its deselect/hide tasks. Otherwise skip them (first init).
+        if (_activeTab.TabBtn != null || _activeTab.TabPanel != null)
         {
-            //Deselect previous TabBtn and hide previous TapPanel 
-            _activeTab.TabBtn.Deselect(skipAnimation, _cts),
-            _activeTab.TabPanel.Hide(skipAnimation, _cts),
-            
-            //Select new TabBtn
-            selectedTab.TabBtn.Select(skipAnimation, _cts)
-        });
+            if (_activeTab.TabBtn != null)
+                _tabsSwapTasks.Add(_activeTab.TabBtn.Deselect(skipAnimation, _swapCts.Token));
+
+            if (_activeTab.TabPanel != null)
+                _tabsSwapTasks.Add(_activeTab.TabPanel.Hide(skipAnimation, _swapCts.Token));
+        }
+
+        // Always select the new tab button
+        if (selectedTab.TabBtn != null)
+            _tabsSwapTasks.Add(selectedTab.TabBtn.Select(skipAnimation, _swapCts.Token));
     }
-
-    async UniTask CancelTabSwappingTask()
-    {
-        if (!_tabIsSwapping || _cts.IsCancellationRequested) return;
-
-        _cts.Cancel();
-        while (_tabIsSwapping)
-            await UniTask.Yield();
-    }
-
+    
 #endregion
 
 #region External Data

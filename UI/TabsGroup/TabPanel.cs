@@ -4,12 +4,11 @@ using Cysharp.Threading.Tasks;
 
 namespace Helpers.UI
 {
-public class TabPanel : MonoBehaviour
+public abstract class TabPanel : MonoBehaviour
 {
- public virtual UniTask Init(CancellationTokenSource cts) => UniTask.CompletedTask;
- 
- public virtual UniTask Show(bool skipAnimation, CancellationTokenSource cts) => UniTask.CompletedTask;
-
- public virtual UniTask Hide(bool skipAnimation, CancellationTokenSource cts) => UniTask.CompletedTask;
+    public abstract UniTask Init(CancellationToken cancelToken, object config = null);
+    public abstract void Deinit();
+    public abstract UniTask Show(bool skipAnimation, CancellationToken cancelToken);
+    public abstract UniTask Hide(bool skipAnimation, CancellationToken cancelToken);
 }
 }

@@ -12,8 +12,8 @@ public class TabButton : MonoBehaviour
 
     public void Init() => _btnHelper.Init();
 
-    public virtual UniTask Select(bool skipAnimation, CancellationTokenSource cts) => UniTask.CompletedTask;
+    public virtual UniTask Select(bool skipAnimation, CancellationToken cancelToken) => UniTask.CompletedTask;
 
-    public virtual UniTask Deselect(bool skipAnimation, CancellationTokenSource cts) => UniTask.CompletedTask;
+    public virtual UniTask Deselect(bool skipAnimation, CancellationToken cancelToken) => UniTask.CompletedTask;
 }
 }
