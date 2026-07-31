@@ -58,15 +58,7 @@ public static class SaveSystem
             File.Move(tempPath, filePath);
     }
 
-    public static T LoadOrCreate<T>(string filePath) where T : class, new()
-    {
-        var value = TryLoad(filePath, out T loaded) ? loaded : new T();
-
-        if (value is IInitializableData runtime)
-            runtime.Initialize();
-
-        return value;
-    }
+    public static T LoadOrCreate<T>(string filePath) where T : class, new() => TryLoad(filePath, out T loaded) ? loaded : new T();
 
     /// <summary>
     /// Attempts to load an object from disk.
