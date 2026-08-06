@@ -52,6 +52,13 @@ public static class Extension
         }
     }
 
+    public static Sequence FinishAndGetNew(this Sequence tween, bool complete = true)
+    {
+        tween?.CheckAndEnd(complete);
+        tween = DOTween.Sequence();
+        return tween;
+    }
+
 #endif
 #endregion
 
