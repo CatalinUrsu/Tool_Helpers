@@ -6,7 +6,7 @@ namespace Helpers.UI
 {
 public class TabButton : MonoBehaviour
 {
-    [SerializeField] ButtonHelper _btnHelper;
+    [SerializeField] protected ButtonHelper _btnHelper;
 
     public ButtonHelper BtnHelper => _btnHelper;
 
