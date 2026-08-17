@@ -28,10 +28,9 @@ public class TabsGroup : MonoBehaviour
         var tabPanelInitTasks = new List<UniTask>();
 
         InitTabs();
-        StartTabSwapping(_tabs[0], true).Forget();
-
-        _activeTab = _tabs.Count > 0 ? _tabs[0] : _activeTab;
         await UniTask.WhenAll(tabPanelInitTasks);
+
+        StartTabSwapping(_tabs[0], true).Forget();
         return;
 
         void InitTabs()
