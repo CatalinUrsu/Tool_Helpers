@@ -22,7 +22,9 @@ public static class SaveSystem
 
     static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented = false
+        WriteIndented = false,
+        IncludeFields = true,
+        IgnoreReadOnlyProperties = true
     };
 
     const string EXTENSION_TEMP = ".tmp";
@@ -100,7 +102,7 @@ public static class SaveSystem
 #endregion
 
 #region Private methods
-
+    
     static void EnsureSaveDirectoryExists(string filePath)
     {
         var directory = Path.GetDirectoryName(filePath);

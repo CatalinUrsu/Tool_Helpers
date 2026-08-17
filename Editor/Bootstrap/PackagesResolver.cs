@@ -32,6 +32,8 @@ namespace Helpers.Editor.Bootstrap
         [MenuItem("Tools/Helpers/Wizard/Resolve All Packages", false, 1)]
         public static void ResolveAll()
         {
+            if(Application.isPlaying) return;
+            
             var upmChanged = AddExternalPackages();
             
             // Install NuGet packages if no other packages added to manifest
