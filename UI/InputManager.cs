@@ -29,7 +29,7 @@ public class InputManager : Singleton<InputManager>
             else
                 OnToggleInputLock?.Invoke(false);
 
-            Debug.Log($"[InputManager] --- <b>{(!value ? "Lock" : "Unlock")}</b> request | system is <b>{!inputIsLocked}</b>");
+            Debug.Log($"---[InputManager] <b>{(!value ? "Lock" : "Unlock")}</b> request | lock count: <b>{_lockCount} [{(inputIsLocked ? "Locked" : "Unlocked")}]</b>");
         }
     }
 

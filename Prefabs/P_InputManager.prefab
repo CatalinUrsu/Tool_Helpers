@@ -175,6 +175,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: P_Canvas_BlockUI
       objectReference: {fileID: 0}
+    - target: {fileID: 3420933349810913211, guid: 25f846013408d154fbadebed8d850ce9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
