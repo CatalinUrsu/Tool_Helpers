@@ -1,13 +1,11 @@
-﻿using FMODUnity;
+﻿using System;
+using FMODUnity;
 using FMOD.Studio;
 using UnityEngine;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine.AddressableAssets;
-
-#if UNITY_EDITOR
-using UnityEditor.AddressableAssets;
-#endif
 
 namespace Helpers.Audio
 {
@@ -18,39 +16,55 @@ public static class FmodExtensions
 #region Loading & Unloading Banks
 
     /// <summary>
-    /// Loads a text asset as an FMOD bank using the provided asset reference.
+    /// Loads an FMOD bank from Addressables, using FMOD RuntimeManager and waits until FMOD reports it as loaded
     /// </summary>
-    public static async UniTask<BankData> LoadBank(this AssetReference assetRef)
+    public static async UniTask LoadBank(this AssetReference assetRef, bool loadSamples = false, int timeoutMs = 5000, CancellationToken cancelToken = default)
     {
-        var textAsset = await Addressables.LoadAssetAsync<TextAsset>(assetRef);
-     var bank = new Bank();
+        ValidateBankReference(assetRef);
+        
+        if (RuntimeManager.HasBankLoaded(assetRef.AssetGUID))
+        {
+            Debug.LogWarning($"[FmodExtensions]: FMOD bank '{assetRef.RuntimeKey}' is already loaded. Skipping load.");
+            return;
+        }
 
-#if UNITY_EDITOR
-        if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
-            return new BankData();
-#endif
+        try
+        {
+            var completionSource = new UniTaskCompletionSource();
+            RuntimeManager.LoadBank(assetRef, loadSamples, () => completionSource.TrySetResult());
 
-     var result = RuntimeManager.StudioSystem.loadBankMemory(textAsset.bytes, LOAD_BANK_FLAGS.NORMAL, out bank);
-     if (result == FMOD.RESULT.OK)
-         Debug.Log("FMOD Bank loaded successfully.");
-     else
-         Debug.LogError("Failed to load FMOD Bank: " + result);
-
-     return new BankData(bank, textAsset);
+            await completionSource.Task
+                                  .Timeout(TimeSpan.FromMilliseconds(timeoutMs))
+                                  .AttachExternalCancellation(cancelToken);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException($"[FmodExtensions]: Timed out while loading FMOD bank '{assetRef.RuntimeKey}'.", ex);
+        }
     }
 
     /// <summary>
-    /// Unloads an FMOD bank and releases the associated text asset.
+    /// Unloads an FMOD bank that was loaded via the same Addressable AssetReference.
     /// </summary>
-    public static void UnloadBank(this BankData bankData)
+    public static bool UnloadBank(this AssetReference assetRef)
     {
-#if UNITY_EDITOR
-        if (AddressableAssetSettingsDefaultObject.Settings.ActivePlayModeDataBuilderIndex == 0)
-            return;
-#endif
-        
-        bankData.Bank.unload();
-        Addressables.Release(bankData.TextAsset);
+        if (assetRef == null || string.IsNullOrEmpty(assetRef.AssetGUID) || !RuntimeManager.IsInitialized)
+            return false;
+
+        if (!RuntimeManager.HasBankLoaded(assetRef.AssetGUID))
+            return false;
+
+        RuntimeManager.UnloadBank(assetRef);
+        return true;
+    }
+
+    static void ValidateBankReference(AssetReference assetRef)
+    {
+        if (assetRef == null)
+            throw new ArgumentNullException(nameof(assetRef));
+
+        if (!assetRef.RuntimeKeyIsValid() || string.IsNullOrEmpty(assetRef.AssetGUID))
+            throw new ArgumentException("[FmodExtensions]: AssetReference must have a valid runtime key and GUID.", nameof(assetRef));
     }
 
 #endregion
@@ -129,7 +143,7 @@ public static class FmodExtensions
     public static void SetParameter(this EventInstance eventInstance, string paramName, float paramValue) => eventInstance.setParameterByName(paramName, paramValue);
 
     public static void SetParameter(this EventInstance eventInstance, string paramName, string paramValue) => eventInstance.setParameterByNameWithLabel(paramName, paramValue);
-    
+
 #endregion
 }
 }
