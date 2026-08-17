@@ -3,6 +3,7 @@ using System;
 using R3.Triggers;
 using UnityEngine;
 using UnityEngine.UI;
+using EditorAttributes;
 
 namespace Helpers.UI
 {
@@ -10,8 +11,8 @@ namespace Helpers.UI
 [RequireComponent(typeof(Button))]
 public class ButtonHelper : MonoBehaviour
 {
-    public Button Btn { get; private set; }
-    public RectTransform RT { get; private set; }
+    [field: SerializeField, ReadOnly] public Button Btn { get; private set; }
+    [field: SerializeField, ReadOnly] public RectTransform RT { get; private set; }
 
     public event Action OnPointerDown;
     public event Action OnPointerUp;
