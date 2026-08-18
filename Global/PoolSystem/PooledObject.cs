@@ -12,13 +12,6 @@ public class PooledObject : MonoBehaviour
         OnReleaseToPool += () => onReleaseToPool(this);
         return this;
     }
-    
-    public virtual T Init<T>(Action<T> onReleaseToPool, object config = null) where T : PooledObject
-    {
-        var castedThis = (T)this;
-        OnReleaseToPool += () => onReleaseToPool(castedThis);
-        return castedThis;
-    }
 
     public virtual void Set(object config = null) { }
 
