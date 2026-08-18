@@ -20,13 +20,7 @@ public static class SaveSystem
 {
 #region Fields
 
-    static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = false,
-        IncludeFields = true,
-        IgnoreReadOnlyProperties = true
-    };
-
+    static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     const string EXTENSION_TEMP = ".tmp";
     const string EXTENSION_BACKUP = ".bak";
 
@@ -102,7 +96,15 @@ public static class SaveSystem
 #endregion
 
 #region Private methods
-    
+
+    static JsonSerializerOptions CreateJsonOptions() => new()
+    {
+        WriteIndented = true,
+        IncludeFields = true,
+        IgnoreReadOnlyProperties = true,
+        Converters = { new ReactivePropertyJsonConverterFactory() }
+    };
+
     static void EnsureSaveDirectoryExists(string filePath)
     {
         var directory = Path.GetDirectoryName(filePath);
@@ -131,8 +133,9 @@ public static class SaveSystem
             value = container.Data!;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            UnityEngine.Debug.LogWarning($"SaveSystem: Failed to load data from {filePath}. {ex.GetType().Name}: {ex.Message}");
             return false;
         }
     }
