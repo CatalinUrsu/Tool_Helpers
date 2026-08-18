@@ -1,7 +1,5 @@
-﻿using FMOD;
-using System;
+﻿using System;
 using FMODUnity;
-using FMOD.Studio;
 using UnityEngine;
 using Helpers.PoolSystem;
 using STOP_MODE = FMOD.Studio.STOP_MODE;
@@ -19,43 +17,34 @@ public class FactoryFmodEvents
     bool _enable3DAttributes;
     int _preloadCount;
     int _maxCount;
-    event Action<EventInstance> OnInstanceStop;
 
 #endregion
 
 #region Methods
 
-    Pool<EventInstance> GetPool()
-    {
-        var pool  = new Pool<EventInstance>(OnCreateAction, OnGetAction, OnReleaseAction, OnDestroyAction, _preloadCount, _maxCount);
-        OnInstanceStop += pool.Release;
-        return pool;
-    }
+    Pool<PooledFmodEvent> GetPool() => new(OnCreateAction, OnGetAction, OnReleaseAction, OnDestroyAction, _preloadCount, _maxCount);
     
-    EventInstance OnCreateAction(Action<EventInstance> returnToPoolAction)
+    PooledFmodEvent OnCreateAction(Action<PooledFmodEvent> returnToPoolAction)
     {
-        var eventInstance = _eventReference.GetInstance();
+        var pooledEvent = new PooledFmodEvent(_eventReference, returnToPoolAction);
+        var eventInstance = pooledEvent.Instance;
+
         if (_enable3DAttributes)
             eventInstance.set3DAttributes(Vector3.zero.To3DAttributes());
 
-        return eventInstance;
+        return pooledEvent;
     }
 
-    void OnGetAction(EventInstance eventInstance)
+    void OnGetAction(PooledFmodEvent pooledEvent) => pooledEvent.BindStoppedCallback();
+
+    void OnReleaseAction(PooledFmodEvent pooledEvent)
     {
-        eventInstance.setCallback((_, _, _) => OnInstanceStopped(), EVENT_CALLBACK_TYPE.STOPPED);
-        return;
-
-        RESULT OnInstanceStopped()
-        {
-            OnInstanceStop?.Invoke(eventInstance);
-            return RESULT.OK;
-        }
+        // Prevent callback re-entry while pool-initiated release is running.
+        pooledEvent.UnbindStoppedCallback();
+        pooledEvent.Instance.stop(STOP_MODE.IMMEDIATE);
     }
 
-    void OnReleaseAction(EventInstance eventInstance) => eventInstance.stop(STOP_MODE.IMMEDIATE);
-
-    void OnDestroyAction(EventInstance eventInstance) => eventInstance.ReleaseInstance();
+    void OnDestroyAction(PooledFmodEvent pooledEvent) => pooledEvent.Dispose();
 
 #endregion
 
@@ -91,7 +80,7 @@ public class FactoryFmodEvents
             return this;
         }
 
-        public Pool<EventInstance> Build()
+        public Pool<PooledFmodEvent> Build()
         {
             if (_maxCount < _preloadCount)
                 _maxCount = _preloadCount;

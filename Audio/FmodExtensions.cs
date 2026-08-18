@@ -18,7 +18,7 @@ public static class FmodExtensions
     /// <summary>
     /// Loads an FMOD bank from Addressables, using FMOD RuntimeManager and waits until FMOD reports it as loaded
     /// </summary>
-    public static async UniTask LoadBank(this AssetReference assetRef, bool loadSamples = false, int timeoutMs = 5000, CancellationToken cancelToken = default)
+    public static async UniTask LoadBank(this AssetReference assetRef, bool loadSamples = false, int timeoutSec = 10, CancellationToken cancelToken = default)
     {
         ValidateBankReference(assetRef);
         
@@ -34,8 +34,8 @@ public static class FmodExtensions
             RuntimeManager.LoadBank(assetRef, loadSamples, () => completionSource.TrySetResult());
 
             await completionSource.Task
-                                  .Timeout(TimeSpan.FromMilliseconds(timeoutMs))
-                                  .AttachExternalCancellation(cancelToken);
+                                  .AttachExternalCancellation(cancelToken)
+                                  .Timeout(TimeSpan.FromSeconds(timeoutSec));
         }
         catch (TimeoutException ex)
         {

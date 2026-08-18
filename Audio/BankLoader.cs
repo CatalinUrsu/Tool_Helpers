@@ -8,8 +8,6 @@ public class BankLoader : MonoBehaviour, IBankLoader
 {
     [SerializeField] AssetReference _fmodAssetRef;
 
-    BankData _bankData;
-
     public async UniTask Init() => await _fmodAssetRef.LoadBank();
 
     public void Deinit() => _fmodAssetRef.UnloadBank();
