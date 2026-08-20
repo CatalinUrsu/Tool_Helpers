@@ -13,12 +13,10 @@ public class TabsGroup : MonoBehaviour
     [SerializeField] protected List<Tab> _tabs = new();
 
     protected Tab _activeTab;
-    protected UniTask _currentSwapTask = UniTask.CompletedTask;
-    protected List<UniTask> _tabsSwapTasks = new();
-    protected CancellationTokenSource _initCts = new();
+    protected readonly List<UniTask> _tabsSwapTasks = new();
+    protected readonly CancellationTokenSource _initCts = new();
     protected CancellationTokenSource _swapCts = new();
     protected bool _isSwapInProgress;
-    protected int _swapVersion;
 
 #endregion
 
@@ -73,36 +71,26 @@ public class TabsGroup : MonoBehaviour
 
     protected virtual UniTask InitItem(Tab tab) => tab.TabPanel.Init(_initCts.Token);
 
-    void TabBtnClick_handler(Tab selectedTab)
+    void TabBtnClick_handler(Tab selectedTab) => StartTabSwapping(selectedTab).Forget();
+
+    protected async UniTaskVoid StartTabSwapping(Tab selectedTab, bool skipAnimation = false)
     {
         if (Equals(_activeTab, selectedTab))
             return;
-
-        StartTabSwapping(selectedTab).Forget();
-    }
-
-    async UniTaskVoid StartTabSwapping(Tab selectedTab, bool skipAnimation = false)
-    {
+        
         await CancelPrevSwap();
 
-        var swapVersion = ++_swapVersion;
-        _isSwapInProgress = true;
-        _currentSwapTask = SwapTabs(selectedTab, skipAnimation);
-        
         try
         {
-            await _currentSwapTask.SuppressCancellationThrow();
+            _isSwapInProgress = true;
+            await SwapTabs(selectedTab, skipAnimation);
         }
         finally
         {
-            // Only the latest swap request can clear the in-progress flag.
-            if (swapVersion == _swapVersion)
-            {
-                _isSwapInProgress = false;
-            }
+            _isSwapInProgress = false;
         }
     }
-    
+
     async UniTask SwapTabs(Tab selectedTab, bool skipAnimation)
     {
         // Snapshot the token BEFORE any await so that even if _swapCts is replaced
@@ -121,16 +109,9 @@ public class TabsGroup : MonoBehaviour
         if (!_isSwapInProgress)
             return;
 
-        // 1. Signal cancellation to the running swap.
         _swapCts?.Cancel();
+        await UniTask.WaitUntil(() => !_isSwapInProgress);
 
-        // 2. Wait for the old SwapTabs to fully observe the cancellation and exit.
-        //    Without this await the new SwapTabs starts before the old one finishes,
-        //    causing both to reach TabPanel.Show concurrently with the same token.
-        await _currentSwapTask.SuppressCancellationThrow();
-
-        // 3. Only now replace the CTS so the new swap gets a clean token.
-        _swapCts?.Dispose();
         _swapCts = new();
     }
 
@@ -143,7 +124,7 @@ public class TabsGroup : MonoBehaviour
         {
             if (_activeTab.TabBtn != null)
                 _tabsSwapTasks.Add(_activeTab.TabBtn.Deselect(skipAnimation, _swapCts.Token));
-
+ 
             if (_activeTab.TabPanel != null)
                 _tabsSwapTasks.Add(_activeTab.TabPanel.Hide(skipAnimation, _swapCts.Token));
         }
