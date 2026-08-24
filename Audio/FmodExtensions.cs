@@ -21,7 +21,7 @@ public static class FmodExtensions
     public static async UniTask LoadBank(this AssetReference assetRef, bool loadSamples = false, int timeoutSec = 10, CancellationToken cancelToken = default)
     {
         ValidateBankReference(assetRef);
-        
+
         if (RuntimeManager.HasBankLoaded(assetRef.AssetGUID))
         {
             Debug.LogWarning($"[FmodExtensions]: FMOD bank '{assetRef.RuntimeKey}' is already loaded. Skipping load.");
@@ -52,7 +52,10 @@ public static class FmodExtensions
             return false;
 
         if (!RuntimeManager.HasBankLoaded(assetRef.AssetGUID))
+        {
+            Debug.LogWarning($"[FmodExtensions]: FMOD bank '{assetRef.RuntimeKey}' is not loaded.");
             return false;
+        }
 
         RuntimeManager.UnloadBank(assetRef);
         return true;
