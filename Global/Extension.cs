@@ -41,22 +41,18 @@ public static class Extension
     /// <param name="complete">Decide to Complete or Kill tween</param>
     public static void CheckAndEnd(this Tween tween, bool complete = true)
     {
-        if (tween == null) return;
-
-        if (tween.IsActive() && tween.IsPlaying())
-        {
-            if (complete)
-                tween.Complete();
-            else
-                tween.Kill();
-        }
+        if (tween == null || !tween.IsActive() || !tween.IsPlaying()) return;
+        
+        if (complete)
+            tween.Complete();
+        else
+            tween.Kill();
     }
 
-    public static Sequence FinishAndGetNew(this Sequence tween, bool complete = true)
+    public static Sequence FinishAndGetNew(this Sequence tween, bool completePrevious = true)
     {
-        tween?.CheckAndEnd(complete);
-        tween = DOTween.Sequence();
-        return tween;
+        tween?.CheckAndEnd(completePrevious);
+        return DOTween.Sequence();;
     }
 
 #endif
