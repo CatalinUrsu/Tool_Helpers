@@ -22,8 +22,8 @@ public class ScenesViewer : EditorWindow
     readonly List<EntityId> _removed = new();
     readonly List<string> _scenes = new();
     readonly List<Object> _scenesObj = new();
-    
-    EditorBuildSettingsScene[] _scenesBuild => EditorBuildSettings.scenes;
+
+    static EditorBuildSettingsScene[] ScenesBuild => EditorBuildSettings.scenes;
     
     double _ts;
     bool _showRecent;
@@ -32,8 +32,8 @@ public class ScenesViewer : EditorWindow
     const double REFRESH_PERIOD = 5.0;
     const int PIN_BUTTON_WIDTH = 20;
 
-    GUIStyle _buttonStyle => _buttonStyle_f ??= new GUIStyle(GUI.skin.GetStyle("Button")) {alignment = TextAnchor.MiddleLeft};
-    GUIStyle _buttonStyle_f;
+    GUIStyle ButtonStyle => _buttonStyleF ??= new GUIStyle(GUI.skin.GetStyle("Button")) {alignment = TextAnchor.MiddleLeft};
+    GUIStyle _buttonStyleF;
 
 #endregion
 
@@ -67,7 +67,7 @@ public class ScenesViewer : EditorWindow
     {
         var active = SceneManager.GetActiveScene();
         int activeSceneIndex = active.buildIndex;
-        int sceneCount = _scenesBuild.Length;
+        int sceneCount = ScenesBuild.Length;
 
         GUILayout.Label(" In Build", EditorStyles.boldLabel);
 
@@ -98,7 +98,7 @@ public class ScenesViewer : EditorWindow
                 GUI.color = i == active.buildIndex ? Color.red : Color.white;
 
                 GUILayout.BeginHorizontal();
-                var pressed = GUILayout.Button($"{i}: {sceneName}", _buttonStyle);
+                var pressed = GUILayout.Button($"{i}: {sceneName}", ButtonStyle);
                 var add = CreateSmallButton("+");
                 var sub = CreateSmallButton("-");
                 var show = CreateSmallButton("*");
@@ -147,7 +147,7 @@ public class ScenesViewer : EditorWindow
             GUI.color = isActive ? Color.red : Color.white;
 
             GUILayout.BeginHorizontal();
-            var pressed = GUILayout.Button($"A{i}: {sceneName}", _buttonStyle);
+            var pressed = GUILayout.Button($"A{i}: {sceneName}", ButtonStyle);
             var add = CreateSmallButton("+");
             var sub = CreateSmallButton("-");
             var show = CreateSmallButton("*");
@@ -253,7 +253,7 @@ public class ScenesViewer : EditorWindow
             GUI.color = eq ? Color.red : Color.white;
 
             GUILayout.BeginHorizontal();
-            bool pressed = GUILayout.Button($"{i}: {_scenesObj[i].name}", _buttonStyle);
+            bool pressed = GUILayout.Button($"{i}: {_scenesObj[i].name}", ButtonStyle);
             bool add = CreateSmallButton("&");
             bool show = CreateSmallButton("*");
             GUILayout.EndHorizontal();
@@ -301,7 +301,7 @@ public class ScenesViewer : EditorWindow
     void SwitchScene(int index)
     {
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            EditorSceneManager.OpenScene(_scenesBuild[index].path);
+            EditorSceneManager.OpenScene(ScenesBuild[index].path);
     }
 
     bool EqualPaths(string path1, string path2)
@@ -441,10 +441,13 @@ public class ScenesViewer : EditorWindow
     void UpdateList()
     {
         var s = Selection.activeEntityId;
-
+#if UNITY_6000_0_OR_NEWER
+        if (s.CompareTo(default) == 0 || _recents.Contains(s))
+            return;
+#else
         if (s == 0 || _recents.Contains(s))
             return;
-
+#endif
         _recents.Add(s);
 
         if (_recents.Count > 20)
