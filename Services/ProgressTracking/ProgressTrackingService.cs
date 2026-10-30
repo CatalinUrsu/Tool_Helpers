@@ -41,6 +41,8 @@ public class ProgressTrackingService : IProgressTrackingService
 
     public void RegisterLoadingProgress(params SceneLoadProgress[] sceneLoadProgress)
     {
+        _loadingProcesses.Clear();
+        _loadsFinished = false;
         _loadingProcesses.AddRange(sceneLoadProgress);
         _loadDisposable.Clear();
 
