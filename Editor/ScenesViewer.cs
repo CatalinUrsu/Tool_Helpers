@@ -8,6 +8,11 @@ using UnityEngine.SceneManagement;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 #endif
+#if UNITY_6000_2_OR_NEWER
+using ObjectId = UnityEngine.EntityId;
+#else
+using ObjectId = System.Int32;
+#endif
 
 namespace Helpers.Editor
 {
@@ -17,14 +22,28 @@ public class ScenesViewer : EditorWindow
 
     Vector2 _scrollPos; // Tracks scroll position.
 
-    readonly List<EntityId> _recents = new();
-    readonly List<EntityId> _pins = new();
-    readonly List<EntityId> _removed = new();
+    readonly List<ObjectId> _recents = new();
+    readonly List<ObjectId> _pins = new();
+    readonly List<ObjectId> _removed = new();
     readonly List<string> _scenes = new();
     readonly List<Object> _scenesObj = new();
 
     static EditorBuildSettingsScene[] ScenesBuild => EditorBuildSettings.scenes;
     
+#if UNITY_6000_2_OR_NEWER
+    static readonly ObjectId NoId = EntityId.None;
+    static ObjectId ActiveId => Selection.activeEntityId;
+    static ObjectId GetId(Object obj) => obj.GetEntityId();
+    static Object ToObject(ObjectId id) => EditorUtility.EntityIdToObject(id);
+    static void Select(ObjectId id) => Selection.entityIds = new[] {id};
+#else
+    static readonly ObjectId NoId = 0;
+    static ObjectId ActiveId => Selection.activeInstanceID;
+    static ObjectId GetId(Object obj) => obj.GetInstanceID();
+    static Object ToObject(ObjectId id) => EditorUtility.InstanceIDToObject(id);
+    static void Select(ObjectId id) => Selection.instanceIDs = new[] {id};
+#endif
+
     double _ts;
     bool _showRecent;
     bool _showInProject;
@@ -312,7 +331,7 @@ public class ScenesViewer : EditorWindow
     bool CreateObjectButton(Object obj)
     {
         return GUILayout.Button(
-                                new GUIContent($"{obj.GetEntityId()}: {obj.name}"),
+                                new GUIContent($"{GetId(obj)}: {obj.name}"),
                                 new GUIStyle(GUI.skin.GetStyle("Button")) {alignment = TextAnchor.MiddleLeft}
                                );
     }
@@ -370,14 +389,14 @@ public class ScenesViewer : EditorWindow
     void ListRecent()
     {
         GUILayout.Label("Recent objects", EditorStyles.boldLabel);
-        _recents.RemoveAll(x => EditorUtility.EntityIdToObject(x) == null);
+        _recents.RemoveAll(x => ToObject(x) == null);
 
         var old = GUI.color;
 
         foreach (var recent in _recents)
         {
-            var n = EditorUtility.EntityIdToObject(recent);
-            var s = Selection.activeEntityId;
+            var n = ToObject(recent);
+            var s = ActiveId;
 
             GUI.color = s == recent ? Color.red : Color.white;
 
@@ -388,7 +407,7 @@ public class ScenesViewer : EditorWindow
             GUILayout.EndHorizontal();
 
             if (pressed)
-                Selection.entityIds = new[] {recent};
+                Select(recent);
 
             if (plus && !_pins.Contains(recent))
                 _pins.Add(recent);
@@ -401,16 +420,16 @@ public class ScenesViewer : EditorWindow
     void ListPins()
     {
         GUILayout.Label("Pinned objects", EditorStyles.boldLabel);
-        _pins.RemoveAll(x => EditorUtility.EntityIdToObject(x) == null);
+        _pins.RemoveAll(x => ToObject(x) == null);
         _removed.Clear();
 
         var old = GUI.color;
 
         foreach (var recent in _pins)
         {
-            var n = EditorUtility.EntityIdToObject(recent);
+            var n = ToObject(recent);
 
-            var s = Selection.activeEntityId;
+            var s = ActiveId;
             GUI.color = s == recent ? Color.red : Color.white;
 
             GUILayout.BeginHorizontal();
