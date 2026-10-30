@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Helpers
 {
-public class InputManager : Singleton<InputManager>, IInputLock
+public class InputManager : MonoBehaviour, IInputManager
 {
 #region Fields
 
@@ -39,9 +39,8 @@ public class InputManager : Singleton<InputManager>, IInputLock
 
 #region Public methods
 
-    protected override void Awake()
+    void Awake()
     {
-        base.Awake();
         _inputBlockCanvas.sortingOrder = 50;
     }
 
