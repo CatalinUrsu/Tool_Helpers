@@ -234,7 +234,7 @@ transitions.
 
 ## Components
 
-- [StateMachine](Services/StateMachine/StatesMachine.cs) — Manages state registration and transitions.
+- [StateMachine](Services/StateMachine/StatesMachine.cs) — Manages state registration and transitions. `Enter` is fire-and-forget: transitions run one by one, a request made during a transition waits (last request wins). An exception in `Enter`/`Exit` is logged and the machine moves to the fallback state. Each state gets a `CancellationToken` that is cancelled when the next transition starts.
 - [IState](Services/StateMachine/Interfaces/IState.cs) — Base interface for all states.
 - [IStateEnter](Services/StateMachine/Interfaces/IStateEnter.cs) — Default state interface.
 - [IStateEnterPayload](Services/StateMachine/Interfaces/IStateEnterPayload.cs) — Generic state interface. Used for custom state with some config/data.
@@ -244,7 +244,7 @@ transitions.
 ```csharp
 public class StateMenu : IEnterState
 {
-    public async UniTask Enter()
+    public async UniTask Enter(CancellationToken cancellationToken)
     {
         // Enter stuff here
     }
@@ -257,7 +257,7 @@ public class StateMenu : IEnterState
 
 public class StateGameplay : IStateEnterPayload<bool>
 {
-    public async UniTask Enter(bool payload)
+    public async UniTask Enter(bool payload, CancellationToken cancellationToken)
     {
         // Enter stuff here
     }
@@ -278,14 +278,14 @@ var states = new IState[]
     new StateGameplay<bool>(_serviceOne, _serviceThree)
 };
 
-// Create StateMachine instance and assign needed states
-_stateMachine = new StatesMachine(states);
+// Create StateMachine instance: fallback state (entered after a failed transition) + other states
+_stateMachine = new StatesMachine(stateMenu, states);
 
 //Enter some state 
-_stateMachine.Enter<StateInit>().GetAwaiter();
+_stateMachine.Enter<StateInit>();
 
 //Enter Payload state
-_stateMachine.Enter<StateGameplay, bool>(false).GetAwaiter();
+_stateMachine.Enter<StateGameplay, bool>(false);
 ```
 
 ---

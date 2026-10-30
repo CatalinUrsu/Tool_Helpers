@@ -1,24 +1,60 @@
 ﻿using System;
+using UnityEngine;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace Helpers.Services
 {
+/// <summary>
+/// Runs transitions one by one: Enter requested during a transition waits in a queue (last request wins).
+/// Failed transition is logged and falls back to the fallback state.
+/// </summary>
 public sealed class StatesMachine
 {
-    public string StateName => _currentState.GetType().Name;
-    
-    readonly Dictionary<Type, IState> _states;
-    IState _currentState { get; set; }
+#region Fields
 
-    public StatesMachine(params IState[] states)
+    public string StateName => _currentState?.GetType().Name;
+
+    readonly Dictionary<Type, IState> _states;
+    readonly IStateEnter _fallbackState;
+    
+    bool _isTransitioning;
+    IState _currentState;
+    IState _pendingState;
+    CancellationTokenSource _stateCts;
+    Func<CancellationToken, UniTask> _pendingEnter;
+
+#endregion
+
+#region Public methods
+
+    public StatesMachine(IStateEnter fallbackState, params IState[] states)
     {
         _states = new Dictionary<Type, IState>();
+        _fallbackState = fallbackState;
 
         AddStates(states);
+        AddStates(new IState[] {fallbackState});
     }
 
-    public void AddStates(IState[] states)
+    public void Enter<TState>() where TState : class, IStateEnter
+    {
+        var state = (TState)_states[typeof(TState)];
+        Schedule(state, state.Enter);
+    }
+
+    public void Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
+    {
+        var state = (TState)_states[typeof(TState)];
+        Schedule(state, ct => state.Enter(payload, ct));
+    }
+
+#endregion
+
+#region Private methods
+
+    void AddStates(IState[] states)
     {
         foreach (var state in states)
         {
@@ -30,26 +66,62 @@ public sealed class StatesMachine
         }
     }
 
-    public async UniTask Enter<TState>() where TState : class, IStateEnter
+    void Schedule(IState state, Func<CancellationToken, UniTask> enter)
     {
-        var state = await ChangeState<TState>();
-        await state.Enter();
+        _pendingState = state;
+        _pendingEnter = enter;
+
+        if (!_isTransitioning)
+            RunTransitions().Forget();
     }
 
-    public async UniTask Enter<TState, TPayload>(TPayload payload) where TState : class, IStateEnterPayload<TPayload>
+    async UniTaskVoid RunTransitions()
     {
-        var state = await ChangeState<TState>();
-        await state.Enter(payload);
+        _isTransitioning = true;
+
+        try
+        {
+            while (_pendingState != null)
+            {
+                var state = _pendingState;
+                var enter = _pendingEnter;
+                _pendingState = null;
+                _pendingEnter = null;
+
+                try
+                {
+                    await ChangeState(state, enter);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+
+                    if (state != _fallbackState)
+                        Schedule(_fallbackState, _fallbackState.Enter);
+                }
+            }
+        }
+        finally
+        {
+            _isTransitioning = false;
+        }
     }
 
-    async UniTask<TState> ChangeState<TState>() where TState : class, IState
+    async UniTask ChangeState(IState state, Func<CancellationToken, UniTask> enter)
     {
+        _stateCts?.Cancel();
+        _stateCts?.Dispose();
+        _stateCts = null;
+
         if (_currentState != null)
             await _currentState.Exit();
 
-        var state = _states[typeof(TState)] as TState;
+        _stateCts = new CancellationTokenSource();
         _currentState = state;
-        return state;
+        await enter(_stateCts.Token);
     }
+
+#endregion
 }
 }
