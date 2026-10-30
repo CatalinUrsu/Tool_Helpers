@@ -202,7 +202,7 @@ user interface interactions.
 ## Components
 
 - [DummyImage](UI/DummyImage.cs) — Invisible raycast target for UI layouts.
-- [InputManager](UI/InputManager.cs) — Help to lock/unlock input using delegate, check PointOver needed object
+- [InputManager](UI/InputManager.cs) — Help to lock/unlock input using delegate, check PointOver needed object. Implements [IInputLock](UI/IInputLock.cs), so it can be injected instead of using `Instance`.
 - [Dropdown](UI/DropdownHelper.cs) — Extended dropdown with additional functionality:
   - Easy and well documented API
   - Reactive workflow (``using R3 collection``)
@@ -216,8 +216,9 @@ user interface interactions.
 ## Example
 
 ```csharp
-//UI input will be blocked during whole operationo
-using (InputManager.Instance.LockInputSystem())
+// Zenject: Container.Bind<IInputLock>().FromComponentInNewPrefab(inputManagerPrefab).AsSingle().NonLazy();
+// UI input will be blocked during whole operation
+using (_inputLock.LockInputSystem())
 {
     // Do some stuff
 }

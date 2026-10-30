@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Helpers
 {
-public class InputManager : Singleton<InputManager>
+public class InputManager : Singleton<InputManager>, IInputLock
 {
 #region Fields
 
