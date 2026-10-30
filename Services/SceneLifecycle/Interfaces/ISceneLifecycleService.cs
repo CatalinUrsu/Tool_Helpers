@@ -4,7 +4,7 @@ namespace Helpers.Services
 {
 public interface ISceneLifecycleService
 {
-    UniTask LoadAndInitScene(SceneLoadParams sceneLoadParams, ISceneContext sceneContext);
-    UniTask DeinitAndUnloadScene(string sceneName, ISceneContext sceneContext);
+    UniTask<T> LoadAndInitScene<T>(SceneLoadParams sceneLoadParams) where T : class, IEntryPoint;
+    UniTask DeinitAndUnloadScene(string sceneName, IEntryPoint entryPoint);
 }
 }
