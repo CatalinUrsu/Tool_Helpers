@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Security.Cryptography;
 
 namespace Helpers
@@ -12,7 +13,8 @@ namespace Helpers
 /// Features:
 /// • Atomic file replacement.
 /// • Automatic backup creation.
-/// • Save integrity verification (SHA256).
+/// • Save integrity verification (SHA256 of the JSON written to disk, so new fields in the type do not break old saves).
+/// • Save version + migrate callback for format changes.
 /// • UTF-8 encoding.
 /// • System.Text.Json serialization.
 /// </summary>
@@ -28,25 +30,23 @@ public static class SaveSystem
 
 #region Public methods
 
-    public static void Save<T>(string filePath, T data)
+    public static void Save<T>(string filePath, T data, int version = 0)
     {
         if (data == null)
             throw new ArgumentNullException(nameof(data));
 
         EnsureSaveDirectoryExists(filePath);
 
-        var dataBytes = JsonSerializer.SerializeToUtf8Bytes(data, JsonOptions);
-        var tempPath = filePath + EXTENSION_TEMP;
-
-        SaveContainer container = new()
+        var dataNode = JsonSerializer.SerializeToNode(data, JsonOptions)!;
+        var container = new JsonObject
         {
-            Hash = ComputeHash(dataBytes),
-            Data = data
+            ["Version"] = version,
+            ["Hash"] = ComputeHash(dataNode),
+            ["Data"] = dataNode
         };
 
-        File.WriteAllText(tempPath,
-                          JsonSerializer.Serialize(container, JsonOptions),
-                          Encoding.UTF8);
+        var tempPath = filePath + EXTENSION_TEMP;
+        File.WriteAllText(tempPath, container.ToJsonString(JsonOptions), Encoding.UTF8);
 
         if (File.Exists(filePath)) // Atomically replaces the existing save while preserving a backup.
             File.Replace(tempPath, filePath, filePath + EXTENSION_BACKUP);
@@ -54,21 +54,24 @@ public static class SaveSystem
             File.Move(tempPath, filePath);
     }
 
-    public static T LoadOrCreate<T>(string filePath) where T : class, new() => TryLoad(filePath, out T loaded) ? loaded : new T();
+    /// <param name="version">Current save format version. Older files are passed to <paramref name="migrate"/> before deserialization.</param>
+    /// <param name="migrate">Changes old JSON in place: (data, fileVersion).</param>
+    public static T LoadOrCreate<T>(string filePath, int version = 0, Action<JsonObject, int> migrate = null) where T : class, new() =>
+        TryLoad(filePath, version, migrate, out T loaded) ? loaded : new T();
 
     /// <summary>
     /// Attempts to load an object from disk.
     /// Returns false if the file is missing or corrupted.
     /// </summary>
-    public static bool TryLoad<T>(string filePath, out T value)
+    public static bool TryLoad<T>(string filePath, int version, Action<JsonObject, int> migrate, out T value)
     {
         value = default!;
 
-        if (File.Exists(filePath) && TryLoadInternal(filePath, out value))
+        if (File.Exists(filePath) && TryLoadInternal(filePath, version, migrate, out value))
             return true;
 
         var backupPath = filePath + EXTENSION_BACKUP;
-        return File.Exists(backupPath) && TryLoadInternal(backupPath, out value);
+        return File.Exists(backupPath) && TryLoadInternal(backupPath, version, migrate, out value);
     }
 
     /// <summary>
@@ -113,24 +116,25 @@ public static class SaveSystem
             Directory.CreateDirectory(directory);
     }
 
-    static bool TryLoadInternal<T>(string filePath, out T value)
+    static bool TryLoadInternal<T>(string filePath, int version, Action<JsonObject, int> migrate, out T value)
     {
         value = default!;
 
         try
         {
-            var container = JsonSerializer.Deserialize<SaveContainer<T>>(File.ReadAllText(filePath, Encoding.UTF8), JsonOptions);
-
-            if (container == null)
-                return false;
-
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(container.Data, JsonOptions);
+            var container = JsonNode.Parse(File.ReadAllText(filePath, Encoding.UTF8))!.AsObject();
+            var data = container["Data"]!.AsObject();
+            var hash = container["Hash"]!.GetValue<string>();
+            var fileVersion = container["Version"]?.GetValue<int>() ?? 0;
 
             // Verify that the save has not been corrupted or modified.
-            if (!string.Equals(container.Hash, ComputeHash(bytes), StringComparison.Ordinal))
+            if (!string.Equals(hash, ComputeHash(data), StringComparison.Ordinal))
                 return false;
 
-            value = container.Data!;
+            if (fileVersion < version)
+                migrate?.Invoke(data, fileVersion);
+
+            value = data.Deserialize<T>(JsonOptions)!;
             return true;
         }
         catch (Exception ex)
@@ -141,35 +145,13 @@ public static class SaveSystem
     }
 
     /// <summary>
-    /// Computes the SHA256 hash of serialized data.
+    /// Computes the SHA256 hash of compact JSON of the node: does not depend on C# type or file indentation.
     /// </summary>
-    static string ComputeHash(byte[] data)
+    static string ComputeHash(JsonNode node)
     {
         using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(data);
+        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(node.ToJsonString()));
         return BitConverter.ToString(hash).Replace("-", string.Empty);
-    }
-
-#endregion
-
-#region External Data
-
-    /// <summary>
-    /// Represents the on-disk save format.
-    /// </summary>
-    sealed class SaveContainer<T>
-    {
-        public string Hash { get; set; }
-
-        public T Data { get; set; }
-    }
-
-    // Used only during save to simplify generic type inference.
-    sealed class SaveContainer
-    {
-        public string Hash { get; set; }
-
-        public object Data { get; set; }
     }
 
 #endregion

@@ -181,15 +181,15 @@ PlayerData data = new()
     Level = 8
 };
 
-// Save data.
-SaveManager.Save("PlayerData", data);
+// Save data (optional version of save format).
+SaveSystem.Save("PlayerDataPath", data, version: 1);
 
-// Load data.
-if (!SaveSystem.TryLoad("PlayerDataPath", out playerData))
-            playerData = new PlayerData();
+// Load data, or new PlayerData() if file is missing or corrupted.
+// migrate is called for files with lower version: (json data, file version).
+var playerData = SaveSystem.LoadOrCreate<PlayerData>("PlayerDataPath", version: 1, migrate: (json, fromVersion) => { });
 
 // Delete save.
-SaveManager.Delete("PlayerDataPath");
+SaveSystem.Delete("PlayerDataPath");
 ```
 
 ---
