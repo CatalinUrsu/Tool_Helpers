@@ -34,6 +34,7 @@ public class InputManager : MonoBehaviour, IInputManager
     }
 
     public event Action<bool> OnToggleInputLock;
+    public bool IsLocked => _lockCount != 0;
 
 #endregion
 

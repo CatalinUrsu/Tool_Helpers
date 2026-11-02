@@ -7,6 +7,8 @@ public interface IInputManager
 {
     event Action<bool> OnToggleInputLock;
 
+    bool IsLocked { get; }
+
     /// <summary>
     /// Locks input until returned handle is disposed. Locks are counted, input unlocks after the last one.
     /// </summary>
