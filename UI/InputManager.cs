@@ -45,7 +45,7 @@ public class InputManager : MonoBehaviour, IInputManager
         _inputBlockCanvas.sortingOrder = 50;
     }
 
-    public IDisposable LockInputSystem() => new ReleaseWrapper(this);
+    public IDisposable Lock() => new ReleaseWrapper(this);
 
     public bool IsPointerOverUI(Vector2 touchPos, GameObject targetGO)
     {
