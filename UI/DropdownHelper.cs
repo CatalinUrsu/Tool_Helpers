@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using EditorAttributes;
+using TriInspector;
 using ObservableCollections;
 using UnityEngine.Assertions;
 using UnityEngine.EventSystems;
@@ -15,52 +15,37 @@ namespace Helpers.UI
 {
 [RequireComponent(typeof(RectTransform), typeof(Selectable))]
 [AddComponentMenu("UI (Canvas)/Helpers/Dropdown Helper")]
+[DeclareBoxGroup("base", Title = "Base Elements")]
+[DeclareBoxGroup("options", HideTitle = true)]
+[DeclareBoxGroup("multi", Title = "Multi Select")]
 public class DropdownHelper : MonoBehaviour, IPointerClickHandler, ISubmitHandler, ICancelHandler, IDeselectHandler
 {
 #region Fields
 
-    [SerializeField, VerticalGroup("BaseElements", true,
-                                   nameof(_selectable),
-                                   nameof(Caption),
-                                   nameof(Panel),
-                                   nameof(ItemTemplate),
-                                   nameof(ItemParent),
-                                   nameof(AnimationType),
-                                   nameof(PanelAnimSpeed))]
-    EditorAttributes.Void _groupBaseElements;
-    [field: SerializeField, HideInInspector, Required] public Selectable _selectable;
-    [field: SerializeField, HideInInspector, Required] public DropdownInfoCaption Caption;
-    [field: SerializeField, HideInInspector, Required] public DropdownPanel Panel;
-    [field: SerializeField, HideInInspector, Required] public DropdownInfoItem ItemTemplate;
-    [field: SerializeField, HideInInspector, Required] public Transform ItemParent;
+    [field: SerializeField, Group("base"), Required] public Selectable _selectable;
+    [field: SerializeField, Group("base"), Required] public DropdownInfoCaption Caption;
+    [field: SerializeField, Group("base"), Required] public DropdownPanel Panel;
+    [field: SerializeField, Group("base"), Required] public DropdownInfoItem ItemTemplate;
+    [field: SerializeField, Group("base"), Required] public Transform ItemParent;
 
-    [Header("Animation")]
-    [field: SerializeField, HideInInspector, OnValueChanged(nameof(OnChangeAnimationType))] public EDropdownAnimation AnimationType;
-    [field: SerializeField, HideInInspector, ShowField(nameof(_useAnimation))] public float PanelAnimSpeed = 0.25f;
-    
-    [Space(10)]
-    [SerializeField, VerticalGroup(true, nameof(Options))] EditorAttributes.Void _groupOptions;
-    [HideInInspector] public List<DropdownOption> Options = new();
+    [Title("Animation")]
+    [field: SerializeField, Group("base"), OnValueChanged(nameof(OnChangeAnimationType))] public EDropdownAnimation AnimationType;
+    [field: SerializeField, Group("base"), ShowIf(nameof(_useAnimation))] public float PanelAnimSpeed = 0.25f;
 
-    [Space(10)]
-    [SerializeField, VerticalGroup("MultiSelect", true,
-                                   nameof(MultiSelect),
-                                   nameof(MixedOption),
-                                   nameof(EnableNoneItem),
-                                   nameof(NothingOption),
-                                   nameof(EnableEverythingItem),
-                                   nameof(EverythingOption))]
-    EditorAttributes.Void _groupMultiSelect;
-    [field: SerializeField, HideInInspector] public bool MultiSelect;
-    [field: SerializeField, HideInInspector, ShowField(nameof(MultiSelect))] public DropdownOption MixedOption;
-    
-    [Space]
-    [field: SerializeField, HideInInspector] public bool EnableNoneItem;
-    [field: SerializeField, HideInInspector, ShowField(nameof(EnableNoneItem))] public DropdownOption NothingOption;
-    
-    [Space]
-    [field: SerializeField, HideInInspector] public bool EnableEverythingItem;
-    [field: SerializeField, HideInInspector, ShowField(nameof(EnableEverythingItem))] public DropdownOption EverythingOption;
+    [PropertySpace(SpaceBefore = 10)]
+    [Group("options")] public List<DropdownOption> Options = new();
+
+    [PropertySpace(SpaceBefore = 10)]
+    [field: SerializeField, Group("multi")] public bool MultiSelect;
+    [field: SerializeField, Group("multi"), ShowIf(nameof(MultiSelect))] public DropdownOption MixedOption;
+
+    [PropertySpace(SpaceBefore = 8)]
+    [field: SerializeField, Group("multi")] public bool EnableNoneItem;
+    [field: SerializeField, Group("multi"), ShowIf(nameof(EnableNoneItem))] public DropdownOption NothingOption;
+
+    [PropertySpace(SpaceBefore = 8)]
+    [field: SerializeField, Group("multi")] public bool EnableEverythingItem;
+    [field: SerializeField, Group("multi"), ShowIf(nameof(EnableEverythingItem))] public DropdownOption EverythingOption;
 
     public event Action<int> OnSelectItem;
     public event Action<int, bool> OnMultipleSelectItem;

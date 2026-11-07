@@ -5,7 +5,7 @@
         "Helpers",
         "R3.Unity",
         "UniTask",
-        "EditorAttributes",
+        "TriInspector",
         "DOTween.Modules",
         "Unity.TextMeshPro",
         "Unity.Localization"
