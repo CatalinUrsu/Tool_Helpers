@@ -3,7 +3,7 @@ using System;
 using R3.Triggers;
 using UnityEngine;
 using UnityEngine.UI;
-using EditorAttributes;
+using TriInspector;
 
 namespace Helpers.UI
 {
