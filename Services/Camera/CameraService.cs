@@ -5,33 +5,25 @@ namespace Helpers.Services
 {
 public class CameraService : ICameraService
 {
-    protected Camera _mainCamera;
-    protected readonly Dictionary<string, Camera> _cachedCameras = new();
+    protected readonly Dictionary<string, Camera> _cameras = new();
 
-    public virtual void RegisterMainCamera(Camera camera)
+    public virtual void RegisterCamera(string key, Camera camera)
     {
-        if (_mainCamera != null) return;
-
-        _mainCamera = camera;
-    }
-
-    public Camera GetMainCamera() => _mainCamera;
-
-    public virtual void RegisterCamera(string key, Camera camera, bool addToStack = false)
-    {
-        if (!_cachedCameras.TryAdd(key, camera))
+        if (!_cameras.TryAdd(key, camera))
             Debug.LogError($"[CamerasService] Camera with key '{key}' already exist");
     }
 
-    public virtual void UnregisterCamera(string key) => _cachedCameras.Remove(key);
+    public virtual void UnregisterCamera(string key) => _cameras.Remove(key);
 
-    public Camera GetCameraByKey(string name)
+    public Camera GetCamera(string name)
     {
-        if (_cachedCameras.TryGetValue(name, out var camera))
+        if (_cameras.TryGetValue(name, out var camera))
             return camera;
 
         Debug.LogError($"[CamerasService] Not found camera with key '{name}'!");
         return null;
     }
+
+    public virtual void AddToStack(Camera sourceCamera) { }
 }
 }

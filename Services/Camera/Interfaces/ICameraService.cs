@@ -8,14 +8,13 @@ namespace Helpers.Services
     /// </summary>
     public interface ICameraService
     {
-        void RegisterMainCamera(Camera camera);
 
-        Camera GetMainCamera();
-        
-        void RegisterCamera(string key, Camera camera, bool addToStack = true);
+        void RegisterCamera(string key, Camera camera);
 
         void UnregisterCamera(string key);
 
-        Camera GetCameraByKey(string name);
+        Camera GetCamera(string name);
+
+        void AddToStack(Camera sourceCamera);
     }
 }

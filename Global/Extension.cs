@@ -20,12 +20,12 @@ public static class Extension
         foreach (var item in source)
             action(item);
     }
-    
+
     public static void ForEach<T>(this IEnumerable<T> source, Action<T, int> action)
     {
         var items = source as T[] ?? source.ToArray();
-        
-        for (int i = 0; i < items.Length; i++) 
+
+        for (int i = 0; i < items.Length; i++)
             action(items.ElementAt(i), i);
     }
 
@@ -42,7 +42,7 @@ public static class Extension
     public static void CheckAndEnd(this Tween tween, bool complete = true)
     {
         if (tween == null || !tween.IsActive() || !tween.IsPlaying()) return;
-        
+
         if (complete)
             tween.Complete();
         else
@@ -92,7 +92,7 @@ public static class Extension
     {
         Type type = targetObject.GetType();
         FieldInfo fieldInfo = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         if (fieldInfo != null)
             fieldInfo.SetValue(targetObject, value);
         else
@@ -109,7 +109,7 @@ public static class Extension
     /// <returns></returns>
     public static Vector2 With(this Vector2 vector, float? x = null, float? y = null) =>
         new(x ?? vector.x, y ?? vector.y);
-    
+
     public static Vector2 RoundDigits(this Vector2 vector, int digitsCount)
     {
         int num = (int)Mathf.Pow(10, digitsCount);
@@ -122,7 +122,7 @@ public static class Extension
     /// <returns></returns>
     public static Vector3 With(this Vector3 vector, float? x = null, float? y = null, float? z = null) =>
         new(x ?? vector.x, y ?? vector.y, z ?? vector.z);
-    
+
     public static Vector3 RoundDigits(this Vector3 vector, int digitsCount)
     {
         int num = (int)Mathf.Pow(10, digitsCount);
